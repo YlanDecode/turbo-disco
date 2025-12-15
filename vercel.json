@@ -1,8 +1,12 @@
 {
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "cleanUrls": true,
-  "trailingSlash": false
+  "rewrites": [
+    {
+      "source": "/api/v1/:match*",
+      "destination": "https://depressively-tetched-therese.ngrok-free.dev/api/v1/:match*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
+    }
+  ]
 }

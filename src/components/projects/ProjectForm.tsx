@@ -17,6 +17,9 @@ const projectSchema = z.object({
   assistant_role: z.string().max(255).default('assistant'),
   assistant_tone: z.string().max(255).default('professionnel et clair'),
   max_context_messages: z.number().min(1).max(50).default(10),
+  contact_email: z.string().email('Email invalide').optional().or(z.literal('')),
+  contact_phone: z.string().max(50).optional(),
+  contact_website: z.string().url('URL invalide').optional().or(z.literal('')),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
@@ -39,6 +42,9 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
       assistant_role: 'assistant',
       assistant_tone: 'professionnel et clair',
       max_context_messages: 10,
+      contact_email: '',
+      contact_phone: '',
+      contact_website: '',
     },
   });
 
@@ -95,6 +101,27 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
             <div>
               <label className="text-sm font-medium">Messages de contexte maximum</label>
               <Input type="number" {...register('max_context_messages', { valueAsNumber: true })} />
+            </div>
+          </div>
+
+          <div className="border-t pt-4 space-y-4">
+            <h3 className="font-semibold">Informations de contact</h3>
+
+            <div>
+              <label className="text-sm font-medium">Email de contact</label>
+              <Input type="email" {...register('contact_email')} placeholder="contact@example.com" />
+              {errors.contact_email && <p className="text-sm text-destructive mt-1">{errors.contact_email.message}</p>}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Téléphone de contact</label>
+              <Input {...register('contact_phone')} placeholder="+33 1 42 86 82 00" />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Site web</label>
+              <Input type="url" {...register('contact_website')} placeholder="https://www.example.com" />
+              {errors.contact_website && <p className="text-sm text-destructive mt-1">{errors.contact_website.message}</p>}
             </div>
           </div>
 

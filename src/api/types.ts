@@ -10,6 +10,9 @@ export interface CreateProjectRequest {
   assistant_role?: string;
   assistant_tone?: string;
   max_context_messages?: number;
+  contact_email?: string;
+  contact_phone?: string;
+  contact_website?: string;
 }
 
 export interface UpdateProjectRequest {
@@ -20,6 +23,9 @@ export interface UpdateProjectRequest {
   assistant_role?: string | null;
   assistant_tone?: string | null;
   max_context_messages?: number | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  contact_website?: string | null;
 }
 
 export interface ProjectResponse {
