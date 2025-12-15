@@ -1,7 +1,7 @@
 import { apiClient } from '../client';
 import type { ChatRequest, ChatResponse } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8089/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://depressively-tetched-therese.ngrok-free.dev/api/v1';
 
 // Chat avec réponse complète
 export const sendChatMessage = async (data: ChatRequest): Promise<ChatResponse> => {
