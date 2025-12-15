@@ -1,0 +1,148 @@
+import axios, { AxiosError } from 'axios';
+import CryptoJS from 'crypto-js';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://depressively-tetched-therese.ngrok-free.dev/api/v1';
+const IS_NGROK = /ngrok/i.test(String(API_BASE_URL));
+
+// Clé de chiffrement pour le localStorage (NE PAS commit en production !)
+const ENCRYPTION_KEY = 'madabest-secure-key-2024';
+
+// Utilitaires de chiffrement
+export const encryptData = (data: string): string => {
+  return CryptoJS.AES.encrypt(data, ENCRYPTION_KEY).toString();
+};
+
+export const decryptData = (encryptedData: string): string => {
+  const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
+
+// Gestion sécurisée de la clé API
+export const setApiKey = (apiKey: string): void => {
+  const encrypted = encryptData(apiKey);
+  localStorage.setItem('madabest_api_key', encrypted);
+};
+
+export const getApiKey = (): string | null => {
+  const encrypted = localStorage.getItem('madabest_api_key');
+  if (!encrypted) return null;
+  try {
+    return decryptData(encrypted);
+  } catch (error) {
+    console.error('Failed to decrypt API key:', error);
+    return null;
+  }
+};
+
+export const clearApiKey = (): void => {
+  localStorage.removeItem('madabest_api_key');
+};
+
+// Gestion du projet actif
+export const setActiveProject = (projectId: string): void => {
+  localStorage.setItem('madabest_active_project', projectId);
+};
+
+export const getActiveProject = (): string | null => {
+  return localStorage.getItem('madabest_active_project');
+};
+
+export const clearActiveProject = (): void => {
+  localStorage.removeItem('madabest_active_project');
+};
+
+// Client Axios configuré
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000, // 30 secondes
+});
+
+// Forcer l'entête ngrok pour éviter l'avertissement navigateur
+if (IS_NGROK) {
+  try {
+    (apiClient.defaults.headers as any).common['ngrok-skip-browser-warning'] = 'anyvalue';
+  } catch {}
+}
+
+// Intercepteur de requête pour injecter X-API-Key
+apiClient.interceptors.request.use(
+  (config) => {
+    const apiKey = getApiKey();
+    if (apiKey) {
+      config.headers['X-API-Key'] = apiKey;
+    }
+    // Injecter l'entête ngrok à chaque requête si applicable
+    try {
+      (config.headers as any)['ngrok-skip-browser-warning'] = 'anyvalue';
+    } catch {}
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Intercepteur de réponse pour gérer les erreurs
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<{ detail: string }>) => {
+    if (error.response) {
+      const { status, data } = error.response;
+      
+      switch (status) {
+        case 401:
+          console.error('❌ API Key invalide ou manquante');
+          // Optionnel : rediriger vers la page de sélection de projet
+          clearApiKey();
+          clearActiveProject();
+          window.dispatchEvent(new Event('auth-error'));
+          break;
+        
+        case 403:
+          console.error('❌ Accès refusé à cette ressource');
+          break;
+        
+        case 404:
+          console.error('❌ Ressource introuvable');
+          break;
+        
+        case 413:
+          console.error('❌ Fichier trop volumineux');
+          break;
+        
+        case 500:
+          console.error('❌ Erreur serveur:', data?.detail || 'Erreur inconnue');
+          break;
+        
+        default:
+          console.error(`❌ Erreur ${status}:`, data?.detail || error.message);
+      }
+    } else if (error.request) {
+      console.error('❌ Aucune réponse du serveur. Vérifiez que le backend est démarré.');
+    } else {
+      console.error('❌ Erreur de configuration:', error.message);
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// Client pour les requêtes sans authentification
+export const publicClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000,
+});
+
+if (IS_NGROK) {
+  try {
+    (publicClient.defaults.headers as any).common['ngrok-skip-browser-warning'] = 'anyvalue';
+  } catch {}
+}
+
+export default apiClient;
