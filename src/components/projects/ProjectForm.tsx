@@ -78,6 +78,12 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
     }
   };
 
+  const handleFormSubmit = (data: ProjectFormData) => {
+    if (currentStep === totalSteps) {
+      onSubmit(data);
+    }
+  };
+
   const steps = [
     { number: 1, title: 'Projet', icon: FolderOpen, color: 'blue' },
     { number: 2, title: 'Assistant', icon: Bot, color: 'purple' },
@@ -126,7 +132,13 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6" onKeyDown={(e) => {
+          // Empêcher la soumission sur Enter si on n'est pas à la dernière étape
+          if (e.key === 'Enter' && currentStep < totalSteps) {
+            e.preventDefault();
+            handleNext();
+          }
+        }}>
           {/* Étape 1: Informations du projet */}
           {currentStep === 1 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-5 duration-300">
