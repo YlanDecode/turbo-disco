@@ -57,7 +57,13 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
 
   const formData = watch();
 
-  const handleNext = async () => {
+  const handleNext = async (e?: React.MouseEvent<HTMLButtonElement>) => {
+    // Empêcher la soumission du formulaire
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     let fieldsToValidate: (keyof ProjectFormData)[] = [];
     
     if (currentStep === 1) {
@@ -81,6 +87,16 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
   const handleFormSubmit = (data: ProjectFormData) => {
     if (currentStep === totalSteps) {
       onSubmit(data);
+    }
+  };
+
+  // Empêcher la soumission par Enter sauf à la dernière étape
+  const preventSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (currentStep < totalSteps) {
+        handleNext();
+      }
     }
   };
 
@@ -132,13 +148,19 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6" onKeyDown={(e) => {
-          // Empêcher la soumission sur Enter si on n'est pas à la dernière étape
-          if (e.key === 'Enter' && currentStep < totalSteps) {
-            e.preventDefault();
-            handleNext();
-          }
-        }}>
+        <form 
+          onSubmit={handleSubmit(handleFormSubmit)} 
+          className="space-y-6"
+          onKeyDown={(e) => {
+            // Empêcher la soumission sur Enter dans tous les champs
+            if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+              e.preventDefault();
+              if (currentStep < totalSteps) {
+                handleNext();
+              }
+            }
+          }}
+        >
           {/* Étape 1: Informations du projet */}
           {currentStep === 1 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-5 duration-300">
@@ -154,6 +176,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
                     {...register('name')} 
                     placeholder="Ex: Agence de voyage Madagascar" 
                     className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                    onKeyDown={preventSubmit}
                   />
                   {errors.name && <p className="text-sm text-destructive mt-1.5">{errors.name.message}</p>}
                 </div>
@@ -164,6 +187,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
                     {...register('slug')} 
                     placeholder="agence-madagascar" 
                     className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                    onKeyDown={preventSubmit}
                   />
                   <p className="text-xs text-muted-foreground mt-1.5">Laissez vide pour générer automatiquement</p>
                   {errors.slug && <p className="text-sm text-destructive mt-1.5">{errors.slug.message}</p>}
@@ -186,6 +210,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
                     type="number" 
                     {...register('max_context_messages', { valueAsNumber: true })} 
                     className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                    onKeyDown={preventSubmit}
                   />
                   <p className="text-xs text-muted-foreground mt-1.5">Nombre de messages gardés en mémoire (1-50)</p>
                 </div>
@@ -209,6 +234,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
                       {...register('assistant_name')} 
                       placeholder="Marie" 
                       className="h-11 transition-all focus:ring-2 focus:ring-purple-500"
+                      onKeyDown={preventSubmit}
                     />
                     <p className="text-xs text-muted-foreground mt-1.5">Comment il se présente</p>
                   </div>
@@ -219,6 +245,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
                       {...register('company_name')} 
                       placeholder="Madabest Travel" 
                       className="h-11 transition-all focus:ring-2 focus:ring-purple-500"
+                      onKeyDown={preventSubmit}
                     />
                     <p className="text-xs text-muted-foreground mt-1.5">Affiché dans les conversations</p>
                   </div>
@@ -230,6 +257,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
                     {...register('assistant_role')} 
                     placeholder="conseiller en voyages spécialisé Madagascar" 
                     className="h-11 transition-all focus:ring-2 focus:ring-purple-500"
+                    onKeyDown={preventSubmit}
                   />
                   <p className="text-xs text-muted-foreground mt-1.5">Son expertise et domaine</p>
                 </div>
@@ -240,6 +268,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
                     {...register('assistant_tone')} 
                     placeholder="amical, professionnel et enthousiaste" 
                     className="h-11 transition-all focus:ring-2 focus:ring-purple-500"
+                    onKeyDown={preventSubmit}
                   />
                   <p className="text-xs text-muted-foreground mt-1.5">Style de réponse (formel, décontracté, technique...)</p>
                 </div>
@@ -275,6 +304,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
                     {...register('contact_email')} 
                     placeholder="contact@example.com" 
                     className="h-11 transition-all focus:ring-2 focus:ring-green-500"
+                    onKeyDown={preventSubmit}
                   />
                   {errors.contact_email && <p className="text-sm text-destructive mt-1.5">{errors.contact_email.message}</p>}
                   <p className="text-xs text-muted-foreground mt-1.5">L'assistant pourra communiquer cet email</p>
@@ -289,6 +319,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
                     {...register('contact_phone')} 
                     placeholder="+33 1 42 86 82 00" 
                     className="h-11 transition-all focus:ring-2 focus:ring-green-500"
+                    onKeyDown={preventSubmit}
                   />
                   <p className="text-xs text-muted-foreground mt-1.5">Numéro à partager avec les utilisateurs</p>
                 </div>
@@ -303,6 +334,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
                     {...register('contact_website')} 
                     placeholder="https://www.example.com" 
                     className="h-11 transition-all focus:ring-2 focus:ring-green-500"
+                    onKeyDown={preventSubmit}
                   />
                   {errors.contact_website && <p className="text-sm text-destructive mt-1.5">{errors.contact_website.message}</p>}
                   <p className="text-xs text-muted-foreground mt-1.5">Lien vers votre site officiel</p>
@@ -360,7 +392,10 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading })
             {currentStep < totalSteps ? (
               <Button
                 type="button"
-                onClick={handleNext}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNext(e);
+                }}
                 className={`flex-1 h-11 ${currentStep === 1 ? 'w-full' : ''}`}
               >
                 Suivant
