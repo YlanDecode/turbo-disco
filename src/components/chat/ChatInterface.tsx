@@ -24,47 +24,44 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId: in
   const { projectId, projectData, setProjectData } = useProjectContext();
 
   const { data: conversation, isLoading, refetch } = useConversation(conversationId || '', 50);
-  
-  // Récupérer les données du projet actif
   const { data: project } = useProject(projectId || '');
 
-  // Mettre à jour projectData dans le contexte quand les données sont chargées
+  /* Sync project context */
   useEffect(() => {
     if (project && !projectData) {
       setProjectData(project);
     }
   }, [project, projectData, setProjectData]);
 
+  /* Error handling */
   useEffect(() => {
     if (error) {
-      toast.error(error.message || 'Erreur lors de l\'envoi du message');
+      toast.error(error.message || 'Erreur lors de l’envoi du message');
     }
   }, [error]);
 
   const handleSendMessage = async (message: string) => {
-    // Créer une conversation si nécessaire
     let convId = conversationId;
+
     if (!convId) {
       try {
         const newConv = await createConversation.mutateAsync(undefined);
         convId = newConv.id;
         setConversationId(convId);
-      } catch (err) {
+      } catch {
         toast.error('Impossible de créer une conversation');
         return;
       }
     }
 
-    // Stocker le message de l'utilisateur pour l'affichage immédiat
+    // UI immédiate
     setPendingUserMessage(message);
     setStreamingMessage('');
     setContexts([]);
-    
-    // Afficher le skeleton après 300ms si le streaming n'a pas commencé
+    setShowSkeleton(false);
+
     const skeletonTimer = setTimeout(() => {
-      if (!streamingMessage) {
-        setShowSkeleton(true);
-      }
+      setShowSkeleton(true);
     }, 300);
 
     await sendMessage(message, {
@@ -81,12 +78,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId: in
       },
       onComplete: () => {
         clearTimeout(skeletonTimer);
-        // Nettoyer immédiatement le streaming
         setShowSkeleton(false);
         setStreamingMessage('');
         setContexts([]);
         setPendingUserMessage('');
-        // Recharger la conversation pour afficher les nouveaux messages
         refetch();
       },
     });
@@ -94,40 +89,33 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId: in
 
   const messages: MessageResponse[] = conversation?.messages || [];
 
-  // Créer un message temporaire pour l'utilisateur si un message est en attente
-  const displayMessages = [...messages];
-  if (pendingUserMessage && !streamingMessage) {
-    displayMessages.push({
-      id: 'temp-user',
-      conversation_id: conversationId || '',
-      role: 'user',
-      content: pendingUserMessage,
-      created_at: new Date().toISOString(),
-    });
-  }
-
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] max-w-5xl mx-auto w-full border rounded-2xl shadow-xl bg-background overflow-hidden">
+      {/* Header */}
       <div className="border-b px-6 py-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30">
         <h2 className="font-semibold text-lg">
-          {conversationId ? `Conversation` : 'Nouvelle conversation'}
+          {conversationId ? 'Conversation' : 'Nouvelle conversation'}
         </h2>
         {conversationId && (
-          <p className="text-xs text-muted-foreground mt-1">ID: {conversationId.substring(0, 8)}...</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            ID: {conversationId.substring(0, 8)}...
+          </p>
         )}
       </div>
 
+      {/* Messages */}
       <MessageList
-        messages={displayMessages}
+        messages={messages}
         isLoading={isLoading}
         streamingMessage={streamingMessage}
         contexts={contexts.length > 0 ? contexts : undefined}
-        showUserPending={!!pendingUserMessage && !!streamingMessage}
+        showUserPending={!!pendingUserMessage}
         pendingUserMessage={pendingUserMessage}
         showSkeleton={showSkeleton}
         projectData={projectData}
       />
 
+      {/* Input */}
       <div className="border-t px-6 py-5 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20">
         <MessageInput
           onSend={handleSendMessage}

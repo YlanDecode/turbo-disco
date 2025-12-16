@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { MessageItem } from './MessageItem';
 import type { MessageResponse, ProjectResponse } from '@/api/types';
-import { Loader2, User } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface MessageListProps {
   messages: MessageResponse[];
@@ -19,8 +19,6 @@ export const MessageList: React.FC<MessageListProps> = ({
   isLoading,
   streamingMessage,
   contexts,
-  showUserPending,
-  pendingUserMessage,
   showSkeleton,
   projectData,
 }) => {
@@ -34,7 +32,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingMessage, showUserPending]);
+  }, [messages, streamingMessage]);
 
   const toggleContexts = (messageId: string) => {
     setExpandedContexts((prev) => {
@@ -68,21 +66,6 @@ export const MessageList: React.FC<MessageListProps> = ({
           assistantName={assistantName}
         />
       ))}
-
-      {showUserPending && pendingUserMessage && (
-        <div className="flex gap-4 justify-end">
-          <div className="flex-1 max-w-[85%] space-y-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4 rounded-2xl rounded-tr-sm shadow-md">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-base text-blue-50">Vous</span>
-              <span className="text-xs text-blue-100">À l'instant</span>
-            </div>
-            <div className="text-base leading-relaxed whitespace-pre-wrap text-white">{pendingUserMessage}</div>
-          </div>
-          <div className="flex h-10 w-10 shrink-0 select-none items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md">
-            <User className="h-5 w-5" />
-          </div>
-        </div>
-      )}
 
       {showSkeleton && (
         <div className="flex gap-4 max-w-[85%]">
