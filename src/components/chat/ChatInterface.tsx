@@ -90,7 +90,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId: in
   const messages: MessageResponse[] = conversation?.messages || [];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] max-w-5xl mx-auto w-full border rounded-2xl shadow-xl bg-background overflow-hidden">
+    <div className="flex flex-col h-full w-full border rounded-2xl shadow-xl bg-background overflow-hidden">
       {/* Header */}
       <div className="border-b px-6 py-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30">
         <h2 className="font-semibold text-lg">
