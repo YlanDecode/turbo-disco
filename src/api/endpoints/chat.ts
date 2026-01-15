@@ -11,7 +11,8 @@ export const sendChatMessage = async (data: ChatRequest): Promise<ChatResponse> 
 
 // Interface pour les événements SSE
 export interface SSEMetaEvent {
-  contexts: string[];
+  contexts?: string[];
+  conversation_id?: string;
 }
 
 export interface SSECallbacks {
@@ -19,6 +20,7 @@ export interface SSECallbacks {
   onMeta: (meta: SSEMetaEvent) => void;
   onComplete: () => void;
   onError: (error: Error) => void;
+  onConversationId?: (id: string) => void;
 }
 
 // Chat avec streaming SSE
@@ -104,9 +106,11 @@ export const sendChatMessageStream = async (
           try {
             const parsed = JSON.parse(data);
             
-            // Métadonnées (contextes)
-            if (parsed.contexts) {
+            if (parsed.contexts || parsed.conversation_id) {
               callbacks.onMeta(parsed as SSEMetaEvent);
+              if (parsed.conversation_id && callbacks.onConversationId) {
+                callbacks.onConversationId(parsed.conversation_id);
+              }
               currentEvent = '';
             } 
             // Métadonnées de fin (response_time_ms)

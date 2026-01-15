@@ -4,24 +4,22 @@ import type { ChatRequest } from '../types';
 import { sendChatMessage, sendChatMessageStream, type SSECallbacks } from '../endpoints/chat';
 import { getApiKey } from '../client';
 
-// Hook pour envoyer un message (réponse complète)
 export const useSendMessage = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: ChatRequest) => sendChatMessage(data),
     onSuccess: () => {
-      // Invalider le cache des conversations
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
   });
 };
 
-// Hook pour le chat streaming
 export const useChatStream = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
 
   const sendMessage = useCallback(
     async (
@@ -31,7 +29,7 @@ export const useChatStream = () => {
         k?: number;
         maxTokens?: number;
         onToken: (token: string) => void;
-        onMeta?: (meta: { contexts: string[] }) => void;
+        onMeta?: (meta: { contexts?: string[], conversation_id?: string }) => void;
         onComplete?: () => void;
       }
     ) => {
@@ -62,19 +60,21 @@ export const useChatStream = () => {
           setIsStreaming(false);
           setAbortController(null);
         },
+        onConversationId: (id) => {
+          setConversationId(id);
+        },
       };
 
       const chatRequest: ChatRequest = {
         message,
-        conversation_id: options.conversationId,
-        k: options.k || 3,
+        conversation_id: options.conversationId || conversationId,
         max_tokens: options.maxTokens || 600,
         use_web_search: true,
       };
 
       await sendChatMessageStream(chatRequest, callbacks, apiKey, controller);
     },
-    []
+    [conversationId]
   );
 
   const cancel = useCallback(() => {
@@ -90,5 +90,7 @@ export const useChatStream = () => {
     isStreaming,
     error,
     cancel,
+    setConversationId,
+    conversationId,
   };
 };
