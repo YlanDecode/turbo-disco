@@ -2,13 +2,7 @@ import React from 'react';
 import { Plus, MessageSquare, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConversations, useDeleteConversation } from '@/api/hooks/useConversations';
-
-interface Conversation {
-  id: string;
-  title?: string;
-  updated_at?: string;
-  created_at?: string;
-}
+import { type ConversationResponse } from '@/api/types';
 
 interface ConversationSidebarProps {
   currentConversationId?: string;
@@ -37,10 +31,8 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     }
   };
 
-  // Gestion de la structure de réponse (tableau ou objet avec items)
-  const conversations: Conversation[] = Array.isArray(data) 
-    ? data 
-    : (data as any)?.items || (data as any)?.conversations || [];
+  // Simplified assignment for conversations
+  const conversations: ConversationResponse[] = data?.conversations || [];
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -91,7 +83,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                   <MessageSquare className="h-4 w-4 shrink-0" />
                   <div className="flex flex-col overflow-hidden flex-1">
                     <span className="truncate">
-                      {conv.title || "Nouvelle conversation"}
+                      {formatDate(conv.created_at) || "Nouvelle conversation"}
                     </span>
                     <span className="text-xs opacity-70">
                       {formatDate(conv.updated_at || conv.created_at)}
@@ -114,4 +106,4 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       </div>
     </div>
   );
-};
+}; 

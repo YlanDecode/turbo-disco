@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ConversationSidebar } from '@/components/chat/ConversationSidebar';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { useProjectContext } from '@/contexts/ProjectContext';
+import { useCreateConversation } from '@/api/hooks/useConversations';
 
 export const ChatPage: React.FC = () => {
   const { conversationId } = useParams<{ conversationId?: string }>();
@@ -19,9 +20,17 @@ export const ChatPage: React.FC = () => {
     navigate(`/chat/${id}`);
   };
 
-  const handleNewChat = () => {
-    navigate('/chat');
+  const createConversation = useCreateConversation();
+
+  const handleNewChat = async () => {
+    try {
+      const newConv = await createConversation.mutateAsync(undefined);
+      navigate(`/chat/${newConv.id}`);
+    } catch {
+      console.error('Impossible de créer une conversation');
+    }
   };
+
 
   if (!isAuthenticated) {
     return null;
@@ -38,7 +47,7 @@ export const ChatPage: React.FC = () => {
       </aside>
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="max-w-5xl mx-auto h-full">
-          <ChatInterface key={conversationId} conversationId={conversationId} />
+          <ChatInterface conversationId={conversationId} />
         </div>
       </main>
     </div>

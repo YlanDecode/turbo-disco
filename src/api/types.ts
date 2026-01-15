@@ -149,3 +149,39 @@ export interface FileInfo {
 export interface FileListResponse {
   files: FileInfo[];
 }
+
+// ==================== Authentication ====================
+
+export interface UserCreate {
+  username: string;
+  password: string;
+}
+
+export interface UserRead {
+  id: string;
+  username: string;
+}
+
+export interface Token {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface LogoutRequest {
+  access_token?: string;
+  refresh_token?: string;
+}
+
+export interface LogoutResponse {
+  message: string;
+}

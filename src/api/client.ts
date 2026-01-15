@@ -51,6 +51,27 @@ export const clearActiveProject = (): void => {
   localStorage.removeItem('madabest_active_project');
 };
 
+// Gestion du token JWT d'authentification utilisateur
+export const getAccessToken = (): string | null => {
+  const encrypted = localStorage.getItem('madabest_access_token');
+  if (!encrypted) return null;
+  try {
+    return decryptData(encrypted);
+  } catch {
+    return null;
+  }
+};
+
+export const getRefreshToken = (): string | null => {
+  const encrypted = localStorage.getItem('madabest_refresh_token');
+  if (!encrypted) return null;
+  try {
+    return decryptData(encrypted);
+  } catch {
+    return null;
+  }
+};
+
 // Client Axios configuré
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -67,17 +88,27 @@ if (IS_NGROK) {
   } catch {}
 }
 
-// Intercepteur de requête pour injecter X-API-Key
+// Intercepteur de requête pour injecter X-API-Key et/ou Bearer token
 apiClient.interceptors.request.use(
   (config) => {
+    // Injecter le Bearer token JWT pour l'authentification utilisateur
+    const accessToken = getAccessToken();
+    if (accessToken) {
+      config.headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    // Injecter X-API-Key pour l'authentification projet (chat, conversations)
     const apiKey = getApiKey();
     if (apiKey) {
       config.headers['X-API-Key'] = apiKey;
     }
+
     // Injecter l'entête ngrok à chaque requête si applicable
     try {
-      (config.headers as any)['ngrok-skip-browser-warning'] = 'anyvalue';
-    } catch {}
+      (config.headers as Record<string, unknown>)['ngrok-skip-browser-warning'] = 'anyvalue';
+    } catch {
+      // Ignorer les erreurs
+    }
     return config;
   },
   (error) => {

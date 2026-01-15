@@ -1,9 +1,11 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useProjectContext } from '@/contexts/ProjectContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, FolderKanban, FileText, Settings, LogOut, Menu } from 'lucide-react';
+import { MessageSquare, FolderKanban, FileText, Settings, LogOut, Menu, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -11,7 +13,9 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { projectId, clearProject } = useProjectContext();
+  const { user, logout, isAuthenticated } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navigation = [
     { name: 'Chat', href: '/chat', icon: MessageSquare },
@@ -20,9 +24,16 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     { name: 'Paramètres', href: '/settings', icon: Settings },
   ];
 
-  const handleLogout = () => {
-    clearProject();
-    window.location.href = '/';
+  const handleLogout = async () => {
+    try {
+      clearProject();
+      await logout();
+      toast.success('Déconnexion réussie');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      navigate('/login');
+    }
   };
 
   return (
@@ -66,11 +77,19 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         </button>
 
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          {projectId && (
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Déconnexion
-            </Button>
+          {isAuthenticated && (
+            <div className="flex items-center gap-4">
+              {user && (
+                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                  <User className="h-4 w-4" />
+                  <span>{user.username}</span>
+                </div>
+              )}
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Déconnexion
+              </Button>
+            </div>
           )}
         </div>
       </div>
