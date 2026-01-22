@@ -9,10 +9,10 @@ import {
   FolderKanban,
   Users,
   FileText,
-  Settings,
   Key,
   Webhook,
   BarChart3,
+  Bell,
   ChevronLeft,
   ChevronRight,
   Bot,
@@ -43,7 +43,7 @@ const settingsNavItems: NavItem[] = [
   { labelKey: 'nav.apiKeys', href: '/settings/api-keys', icon: Key },
   { labelKey: 'nav.webhooks', href: '/settings/webhooks', icon: Webhook },
   { labelKey: 'nav.analytics', href: '/settings/analytics', icon: BarChart3 },
-  { labelKey: 'common.settings', href: '/settings', icon: Settings },
+  { labelKey: 'nav.notifications', href: '/settings/notifications', icon: Bell },
 ];
 
 interface SidebarProps {

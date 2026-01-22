@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCreateProject } from '@/api/hooks/useProjects';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { ProjectForm } from '@/components/projects/ProjectForm';
@@ -7,11 +8,13 @@ import { ApiKeyDisplay } from '@/components/projects/ApiKeyDisplay';
 import { Button } from '@/components/ui/button';
 import type { CreateProjectRequest } from '@/api/types';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/errors';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const NewProjectPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { setProject } = useProjectContext();
   const createProject = useCreateProject();
   const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
@@ -23,10 +26,10 @@ export const NewProjectPage: React.FC = () => {
       if (project.api_key) {
         setCreatedApiKey(project.api_key);
         setCreatedProjectId(project.id);
-        toast.success('Projet créé avec succès !');
+        toast.success(t('common.success'));
       }
     } catch (error) {
-      toast.error('Erreur lors de la création du projet');
+      toast.error(getErrorMessage(error));
     }
   };
 

@@ -21,6 +21,9 @@ import { ProfilePage } from './pages/ProfilePage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AuditLogsPage } from './pages/admin/AuditLogsPage';
 import { ApiKeysPage } from './pages/settings/ApiKeysPage';
+import { WebhooksPage } from './pages/settings/WebhooksPage';
+import { AnalyticsPage } from './pages/settings/AnalyticsPage';
+import { NotificationsPage } from './pages/settings/NotificationsPage';
 import { Toaster, toast } from 'sonner';
 import './index.css';
 
@@ -109,6 +112,9 @@ function App() {
               >
                 <Route index element={<Navigate to="/settings/api-keys" replace />} />
                 <Route path="api-keys" element={<ApiKeysPage />} />
+                <Route path="webhooks" element={<WebhooksPage />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
               </Route>
 
               {/* Routes protégées avec Layout classique */}

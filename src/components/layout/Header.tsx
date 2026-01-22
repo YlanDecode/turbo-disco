@@ -165,10 +165,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = f
             aria-haspopup="true"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              {user?.full_name?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
+              {user?.display_name?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
             </div>
             <span className="hidden md:inline-block max-w-[150px] truncate">
-              {user?.full_name || user?.email || t('common.user')}
+              {user?.display_name || user?.username || t('common.user')}
             </span>
             <ChevronDown className="h-4 w-4" aria-hidden="true" />
           </Button>
@@ -182,8 +182,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = f
               />
               <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border bg-card shadow-lg" role="menu">
                 <div className="border-b p-4">
-                  <p className="font-medium truncate">{user?.full_name || t('common.user')}</p>
-                  <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
+                  <p className="font-medium truncate">{user?.display_name || user?.username || t('common.user')}</p>
+                  <p className="text-sm text-muted-foreground truncate">{user?.email || user?.username}</p>
                   <Badge variant="outline" className="mt-2">
                     {user?.role || 'user'}
                   </Badge>

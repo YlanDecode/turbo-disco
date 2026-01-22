@@ -40,9 +40,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({
       )}
 
       <div className={cn(
-        'flex-1 max-w-[85%] space-y-3',
-        isUser && 'bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4 rounded-2xl rounded-tr-sm shadow-md',
-        isAssistant && 'bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-4 rounded-2xl rounded-tl-sm shadow-sm'
+        'max-w-[85%] space-y-2',
+        isUser && 'bg-gradient-to-br from-blue-600 to-blue-700 text-white px-4 py-3 rounded-2xl rounded-tr-sm shadow-md',
+        isAssistant && 'bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm'
       )}>
         <div className="flex items-center gap-2">
           <span className={cn(

@@ -1,12 +1,12 @@
 import axios, { AxiosError } from 'axios';
 import CryptoJS from 'crypto-js';
+import { getErrorMessage, showErrorToast } from '@/lib/errors';
 
 // Ensure HTTPS is always used for the API URL
-const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://depressively-tetched-therese.ngrok-free.dev/api/v1';
+const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://chatbot-api.lantorian.com/api/v1';
 const API_BASE_URL = rawApiUrl.replace(/^http:\/\//i, 'https://');
 const IS_NGROK = /ngrok/i.test(String(API_BASE_URL));
 
-// Clé de chiffrement pour le localStorage (NE PAS commit en production !)
 const ENCRYPTION_KEY = 'madabest-secure-key-2024';
 
 // Utilitaires de chiffrement
@@ -137,54 +137,68 @@ const isProjectAuthError = (error: AxiosError<{ detail: string }>): boolean => {
   return isProjectEndpoint || isApiKeyError || (hadApiKeyHeader && !detail.includes('token'));
 };
 
+// Endpoints qui gèrent leurs propres erreurs (pas de toast automatique)
+const SILENT_ENDPOINTS = ['/auth/login', '/auth/signup', '/auth/refresh'];
+
+// Vérifie si l'endpoint doit afficher un toast automatique
+const shouldShowAutoToast = (url: string | undefined): boolean => {
+  if (!url) return true;
+  return !SILENT_ENDPOINTS.some(endpoint => url.includes(endpoint));
+};
+
 // Intercepteur de réponse pour gérer les erreurs
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError<{ detail: string }>) => {
+    const url = error.config?.url;
+    const showToast = shouldShowAutoToast(url);
+
     if (error.response) {
-      const { status, data } = error.response;
+      const { status } = error.response;
 
       switch (status) {
         case 401:
           if (isProjectAuthError(error)) {
             // Erreur liée à la clé API du projet
-            console.error('❌ Clé API projet invalide ou manquante');
-            // Effacer seulement la clé API, garder le projet sélectionné
             clearApiKey();
-            // Événement spécifique pour les erreurs projet (ne déconnecte pas l'utilisateur)
             window.dispatchEvent(new Event('project-auth-error'));
+            if (showToast) {
+              showErrorToast(error);
+            }
           } else {
             // Erreur liée au token JWT utilisateur
-            console.error('❌ Token utilisateur invalide ou expiré');
             window.dispatchEvent(new Event('auth-error'));
           }
           break;
-        
+
         case 403:
-          console.error('❌ Accès refusé à cette ressource');
-          break;
-        
         case 404:
-          console.error('❌ Ressource introuvable');
-          break;
-        
         case 413:
-          console.error('❌ Fichier trop volumineux');
-          break;
-        
+        case 429:
         case 500:
-          console.error('❌ Erreur serveur:', data?.detail || 'Erreur inconnue');
+        case 502:
+        case 503:
+        case 504:
+          if (showToast) {
+            showErrorToast(error);
+          }
           break;
-        
+
         default:
-          console.error(`❌ Erreur ${status}:`, data?.detail || error.message);
+          if (showToast && status >= 400) {
+            showErrorToast(error);
+          }
       }
     } else if (error.request) {
-      console.error('❌ Aucune réponse du serveur. Vérifiez que le backend est démarré.');
-    } else {
-      console.error('❌ Erreur de configuration:', error.message);
+      // Erreur réseau - pas de réponse du serveur
+      if (showToast) {
+        showErrorToast(error);
+      }
     }
-    
+
+    // Attacher le message d'erreur traduit à l'erreur pour les composants
+    (error as AxiosError & { userMessage?: string }).userMessage = getErrorMessage(error);
+
     return Promise.reject(error);
   }
 );

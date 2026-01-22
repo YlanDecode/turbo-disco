@@ -49,11 +49,31 @@ export const useCreateConversation = () => {
 // Supprimer une conversation
 export const useDeleteConversation = () => {
   const queryClient = useQueryClient();
+  const apiKey = getApiKey();
 
   return useMutation({
     mutationFn: (conversationId: string) => deleteConversation(conversationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    onMutate: async (conversationId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['conversations', apiKey, conversationId] });
+    },
+    onSuccess: (_data, conversationId) => {
+      // Supprimer toutes les queries de cette conversation du cache (évite un refetch 404)
+      queryClient.removeQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) &&
+            key[0] === 'conversations' &&
+            key[2] === conversationId;
+        }
+      });
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) &&
+            key[0] === 'conversations' &&
+            typeof key[2] === 'object';
+        }
+      });
     },
   });
 };

@@ -6,6 +6,7 @@ import { useConversation } from '@/api/hooks/useConversations';
 import { useProject } from '@/api/hooks/useProjects';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/errors';
 import type { MessageResponse } from '@/api/types';
 
 interface ChatInterfaceProps {
@@ -18,11 +19,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId: in
   const [contexts, setContexts] = useState<string[]>([]);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [optimisticMessages, setOptimisticMessages] = useState<MessageResponse[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(initialConvId);
 
   const { sendMessage, isStreaming, error, cancel } = useChatStream();
   const { projectId, projectData, setProjectData } = useProjectContext();
 
-  const { data: conversation, isLoading, refetch } = useConversation(initialConvId || '', 50);
+  const { data: conversation, isLoading, refetch } = useConversation(currentConversationId || '', 50);
   const { data: project } = useProject(projectId || '');
 
   useEffect(() => {
@@ -31,6 +33,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId: in
       setStreamingMessage('');
       setContexts([]);
       setShowSkeleton(false);
+      setCurrentConversationId(initialConvId);
     }, 0);
 
     return () => clearTimeout(timer);
@@ -44,7 +47,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId: in
 
   useEffect(() => {
     if (error) {
-      toast.error(error.message || "Erreur lors de l'envoi du message");
+      toast.error(getErrorMessage(error));
     }
   }, [error]);
 
@@ -82,6 +85,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId: in
       },
       onMeta: (meta) => {
         setContexts(meta.contexts || []);
+        // Capture le nouveau conversation_id quand une nouvelle conversation est créée
+        if (meta.conversation_id && meta.conversation_id !== currentConversationId) {
+          setCurrentConversationId(meta.conversation_id);
+        }
       },
       onComplete: () => {
         clearTimeout(skeletonTimer);

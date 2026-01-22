@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useProjects, useRotateApiKey, useRevokeApiKey, useRegenerateApiKey } from '@/api/hooks/useProjects';
+import { useProjects, useRotateApiKey, useRevokeApiKey, useRegenerateApiKey, useRevealApiKey } from '@/api/hooks/useProjects';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,7 @@ export const ApiKeysPage: React.FC = () => {
   const rotateApiKey = useRotateApiKey();
   const revokeApiKey = useRevokeApiKey();
   const regenerateApiKey = useRegenerateApiKey();
+  const revealApiKey = useRevealApiKey();
 
   const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -41,14 +42,11 @@ export const ApiKeysPage: React.FC = () => {
     setVisibleKeys((prev) => ({ ...prev, [projectId]: !prev[projectId] }));
   };
 
-  const handleCopyKey = async (apiKey: string | null | undefined, projectId: string) => {
-    if (!apiKey) {
-      toast.error(t('apiKeys.errorCopy'));
-      return;
-    }
-
+  const handleCopyKey = async (projectId: string) => {
     try {
-      await navigator.clipboard.writeText(apiKey);
+      // Révéler la clé via l'API puis la copier
+      const response = await revealApiKey.mutateAsync(projectId);
+      await navigator.clipboard.writeText(response.api_key);
       setCopiedId(projectId);
       toast.success(t('apiKeys.keyCopied'));
       setTimeout(() => setCopiedId(null), 2000);
@@ -198,7 +196,7 @@ export const ApiKeysPage: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleCopyKey(project.api_key, project.id)}
+                        onClick={() => handleCopyKey(project.id)}
                         title={t('apiKeys.copy')}
                       >
                         {copiedId === project.id ? (

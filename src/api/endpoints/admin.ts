@@ -6,6 +6,9 @@ import type {
   ApproveUserRequest,
   RejectUserRequest,
   UpdateRoleRequest,
+  AdminCreateUserRequest,
+  AdminUpdateUserRequest,
+  AdminChangePasswordRequest,
   AuditLogListParams,
   AuditLogListResponse,
   PaginationMetadata,
@@ -25,6 +28,12 @@ export const getUsers = async (params?: AdminUserListParams): Promise<{
   pagination: PaginationMetadata;
 }> => {
   const response = await apiClient.get('/admin/users', { params });
+  return response.data;
+};
+
+// GET /admin/users/{user_id} - Détail d'un utilisateur
+export const getUser = async (userId: string): Promise<UserProfile> => {
+  const response = await apiClient.get<UserProfile>(`/admin/users/${userId}`);
   return response.data;
 };
 
@@ -50,6 +59,29 @@ export const updateUserRole = async (
   data: UpdateRoleRequest
 ): Promise<void> => {
   await apiClient.put(`/admin/users/${userId}/role`, data);
+};
+
+// POST /admin/users - Créer un utilisateur
+export const createUser = async (data: AdminCreateUserRequest): Promise<UserProfile> => {
+  const response = await apiClient.post<UserProfile>('/admin/users', data);
+  return response.data;
+};
+
+// PATCH /admin/users/{user_id} - Modifier un utilisateur
+export const updateUser = async (
+  userId: string,
+  data: AdminUpdateUserRequest
+): Promise<UserProfile> => {
+  const response = await apiClient.patch<UserProfile>(`/admin/users/${userId}`, data);
+  return response.data;
+};
+
+// PATCH /admin/users/{user_id}/password - Modifier le mot de passe d'un utilisateur
+export const changeUserPassword = async (
+  userId: string,
+  data: AdminChangePasswordRequest
+): Promise<void> => {
+  await apiClient.patch(`/admin/users/${userId}/password`, data);
 };
 
 // DELETE /admin/users/{user_id} - Supprimer un utilisateur

@@ -95,7 +95,7 @@ export const DashboardPage: React.FC = () => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold">
-            {t('dashboard.welcome', { name: user?.full_name || t('common.user') })}
+            {t('dashboard.welcome', { name: user?.display_name || user?.username || t('common.user') })}
           </h1>
           <p className="text-muted-foreground">
             {t('dashboard.overview')}

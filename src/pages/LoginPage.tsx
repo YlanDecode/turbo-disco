@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { MessageSquare, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/errors';
 
 export const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -39,11 +40,9 @@ export const LoginPage: React.FC = () => {
       toast.success(t('auth.loginSuccess'));
       navigate(from, { replace: true });
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error
-        ? err.message
-        : (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t('auth.invalidCredentials');
+      const errorMessage = getErrorMessage(err);
       setError(errorMessage);
-      toast.error(t('auth.loginError'));
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

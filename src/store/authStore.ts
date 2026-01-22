@@ -54,7 +54,7 @@ export const useAuthStore = create<AuthState>()(
 
       isAdmin: () => {
         const { user } = get();
-        return user?.role === 'admin' || user?.role === 'super_admin';
+        return user?.role === 'super_admin';
       },
 
       hasRole: (role) => {
@@ -63,8 +63,7 @@ export const useAuthStore = create<AuthState>()(
 
         const roleHierarchy: Record<string, number> = {
           user: 1,
-          admin: 2,
-          super_admin: 3,
+          super_admin: 2,
         };
 
         const userLevel = roleHierarchy[user.role] || 0;

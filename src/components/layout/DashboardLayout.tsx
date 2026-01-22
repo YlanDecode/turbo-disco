@@ -21,7 +21,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const { isAuthenticated, isLoading, user } = useAuth();
 
   // Check if user is admin
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role === 'super_admin';
 
   // Initialize theme from localStorage
   useEffect(() => {

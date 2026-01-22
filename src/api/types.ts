@@ -188,7 +188,7 @@ export interface UserCreate {
 export interface UserRead {
   id: string;
   username: string;
-  role?: 'user' | 'admin' | 'super_admin';
+  role?: UserRole;
 }
 
 export interface Token {
@@ -230,22 +230,30 @@ export interface VerifyEmailRequest {
 
 // ==================== Users / Profile ====================
 
+export type UserRole = 'user' | 'super_admin';
+
 export interface UserProfile {
   id: string;
   username: string;
-  email: string;
-  full_name?: string;
-  role: 'user' | 'admin' | 'super_admin';
-  is_active: boolean;
+  email: string | null;
+  display_name?: string;
+  avatar_url?: string;
+  role: UserRole;
+  is_active?: boolean;
   is_approved: boolean;
   email_verified: boolean;
   created_at: string;
-  last_login: string | null;
+  updated_at?: string;
+  last_login?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
 }
 
 export interface UpdateProfileRequest {
   email?: string;
-  username?: string;
+  display_name?: string;
+  avatar_url?: string;
+  password?: string;
 }
 
 export interface ChangePasswordRequest {
@@ -287,13 +295,13 @@ export interface PendingUser {
   id: string;
   username: string;
   email: string;
-  full_name?: string;
+  display_name?: string;
   created_at: string;
   requested_at?: string;
 }
 
 export interface AdminUserListParams {
-  role?: 'user' | 'admin' | 'super_admin';
+  role?: UserRole;
   is_approved?: boolean;
   limit?: number;
   offset?: number;
@@ -309,7 +317,30 @@ export interface RejectUserRequest {
 }
 
 export interface UpdateRoleRequest {
-  role: 'user' | 'admin' | 'super_admin';
+  role: UserRole;
+}
+
+// Admin - Create user
+export interface AdminCreateUserRequest {
+  email: string;
+  password: string;
+  display_name?: string;
+  avatar_url?: string;
+  role?: UserRole;
+  is_active?: boolean;
+}
+
+// Admin - Update user
+export interface AdminUpdateUserRequest {
+  email?: string;
+  display_name?: string;
+  avatar_url?: string;
+  is_active?: boolean;
+}
+
+// Admin - Change user password
+export interface AdminChangePasswordRequest {
+  new_password: string;
 }
 
 export interface AuditLog {

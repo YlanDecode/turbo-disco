@@ -2,7 +2,7 @@ import { apiClient } from '../client';
 import type { ChatRequest, ChatResponse } from '../types';
 
 // Ensure HTTPS is always used
-const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://depressively-tetched-therese.ngrok-free.dev/api/v1';
+const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://chatbot-api.lantorian.com/api/v1';
 const API_BASE_URL = rawApiUrl.replace(/^http:\/\//i, 'https://');
 
 // Chat avec réponse complète (utilise X-API-Key pour identifier le projet)

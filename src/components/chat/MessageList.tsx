@@ -47,7 +47,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.length === 0 && !streamingMessage && (
         <div className="flex items-center justify-center h-full text-center text-muted-foreground">
           <div className="max-w-md">

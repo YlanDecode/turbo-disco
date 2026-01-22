@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useProjects, useDeleteProject } from '@/api/hooks/useProjects';
+import { useProjects, useDeleteProject, useRevealApiKey } from '@/api/hooks/useProjects';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Loader2, Check, Trash2, User } from 'lucide-react';
 import { formatDate, maskApiKey } from '@/lib/helpers';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/errors';
 import { Link } from 'react-router-dom';
 
 export const ProjectsPage: React.FC = () => {
@@ -16,43 +17,40 @@ export const ProjectsPage: React.FC = () => {
   const { projectId: activeProjectId, apiKey: activeApiKey, setProject, clearProject } = useProjectContext();
   const { data, isLoading } = useProjects({ page: 1, limit: 20 });
   const deleteProject = useDeleteProject();
+  const revealApiKey = useRevealApiKey();
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [selectingId, setSelectingId] = useState<string | null>(null);
 
-  const handleSelectProject = (id: string) => {
-    setSelectedProjectId(id);
-    setApiKeyInput('');
-  };
-
-  const handleConfirmApiKey = () => {
-    if (!apiKeyInput.trim() || !selectedProjectId) {
-      toast.error('Veuillez saisir une clé API valide');
-      return;
+  const handleSelectProject = async (id: string) => {
+    setSelectingId(id);
+    try {
+      const response = await revealApiKey.mutateAsync(id);
+      setProject(id, response.api_key);
+      toast.success(t('common.success'));
+      navigate('/chat');
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSelectingId(null);
     }
-    setProject(selectedProjectId, apiKeyInput);
-    toast.success('Projet sélectionné');
-    setSelectedProjectId(null);
-    setApiKeyInput('');
-    navigate('/chat');
   };
 
   const handleDeleteProject = async (id: string, name: string) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer le projet "${name}" ?`)) {
+    if (!confirm(`${t('common.confirm')} - ${name} ?`)) {
       return;
     }
 
     setDeletingId(id);
     try {
       await deleteProject.mutateAsync(id);
-      toast.success('Projet supprimé');
-      
+      toast.success(t('common.success'));
+
       // Si c'est le projet actif, le déselectionner
       if (activeProjectId === id) {
         clearProject();
       }
     } catch (error) {
-      toast.error('Erreur lors de la suppression du projet');
+      toast.error(getErrorMessage(error));
     } finally {
       setDeletingId(null);
     }
@@ -167,7 +165,11 @@ export const ProjectsPage: React.FC = () => {
                     variant="outline"
                     className="w-full border-amber-500 text-amber-600 hover:bg-amber-50"
                     onClick={() => handleSelectProject(project.id)}
+                    disabled={selectingId === project.id}
                   >
+                    {selectingId === project.id ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
                     {t('projects.invalidKeyClickToChange')}
                   </Button>
                 ) : activeProjectId !== project.id ? (
@@ -175,7 +177,11 @@ export const ProjectsPage: React.FC = () => {
                     variant="outline"
                     className="w-full"
                     onClick={() => handleSelectProject(project.id)}
+                    disabled={selectingId === project.id}
                   >
+                    {selectingId === project.id ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
                     {t('projects.selectProject')}
                   </Button>
                 ) : null}
@@ -184,50 +190,6 @@ export const ProjectsPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Dialogue pour saisir la clé API */}
-        {selectedProjectId && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-md">
-              <CardHeader>
-                <CardTitle>Saisir la clé API</CardTitle>
-                <CardDescription>
-                  Entrez la clé API du projet pour l'activer
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Clé API</label>
-                  <input
-                    type="text"
-                    value={apiKeyInput}
-                    onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder="Collez votre clé API ici"
-                    className="w-full mt-1 px-3 py-2 border rounded-md"
-                    autoFocus
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {
-                      setSelectedProjectId(null);
-                      setApiKeyInput('');
-                    }}
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={handleConfirmApiKey}
-                  >
-                    Confirmer
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
     </div>
   );

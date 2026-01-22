@@ -26,7 +26,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const profileSchema = z.object({
-  full_name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
+  display_name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
   email: z.string().email('Email invalide'),
 });
 
@@ -62,7 +62,7 @@ export const ProfilePage: React.FC = () => {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      full_name: profile?.full_name || user?.full_name || '',
+      display_name: profile?.display_name || user?.display_name || '',
       email: profile?.email || user?.email || '',
     },
   });
@@ -80,7 +80,7 @@ export const ProfilePage: React.FC = () => {
   React.useEffect(() => {
     if (profile) {
       resetProfile({
-        full_name: profile.full_name || '',
+        display_name: profile.display_name || '',
         email: profile.email || '',
       });
     }
@@ -141,11 +141,11 @@ export const ProfilePage: React.FC = () => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-3xl font-bold text-primary-foreground">
-            {displayProfile?.full_name?.[0]?.toUpperCase() || displayProfile?.email?.[0]?.toUpperCase() || 'U'}
+            {displayProfile?.display_name?.[0]?.toUpperCase() || displayProfile?.username?.[0]?.toUpperCase() || 'U'}
           </div>
           <div>
-            <h1 className="text-2xl font-bold">{displayProfile?.full_name || 'Utilisateur'}</h1>
-            <p className="text-muted-foreground">{displayProfile?.email}</p>
+            <h1 className="text-2xl font-bold">{displayProfile?.display_name || displayProfile?.username || 'Utilisateur'}</h1>
+            <p className="text-muted-foreground">{displayProfile?.email || displayProfile?.username}</p>
             <Badge variant="outline" className="mt-2">
               <Shield className="mr-1 h-3 w-3" />
               {displayProfile?.role || 'user'}
@@ -178,17 +178,17 @@ export const ProfilePage: React.FC = () => {
             <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium">Nom complet</label>
+                  <label className="text-sm font-medium">Nom d'affichage</label>
                   <div className="relative mt-1">
                     <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      {...registerProfile('full_name')}
+                      {...registerProfile('display_name')}
                       placeholder="Votre nom"
                       className="pl-10"
                     />
                   </div>
-                  {profileErrors.full_name && (
-                    <p className="mt-1 text-sm text-destructive">{profileErrors.full_name.message}</p>
+                  {profileErrors.display_name && (
+                    <p className="mt-1 text-sm text-destructive">{profileErrors.display_name.message}</p>
                   )}
                 </div>
 
