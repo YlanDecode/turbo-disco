@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useProjects, useDeleteProject } from '@/api/hooks/useProjects';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Loader2, Check, Trash2 } from 'lucide-react';
+import { Plus, Loader2, Check, Trash2, User } from 'lucide-react';
 import { formatDate, maskApiKey } from '@/lib/helpers';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
 export const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { projectId: activeProjectId, setProject, clearProject } = useProjectContext();
+  const { t } = useTranslation();
+  const { projectId: activeProjectId, apiKey: activeApiKey, setProject, clearProject } = useProjectContext();
   const { data, isLoading } = useProjects({ page: 1, limit: 20 });
   const deleteProject = useDeleteProject();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -100,10 +102,16 @@ export const ProjectsPage: React.FC = () => {
                     <CardTitle className="flex items-center gap-2">
                       {project.name}
                       {activeProjectId === project.id && (
-                        <span className="flex items-center gap-1 text-xs font-normal text-primary">
-                          <Check className="h-3 w-3" />
-                          Actif
-                        </span>
+                        activeApiKey ? (
+                          <span className="flex items-center gap-1 text-xs font-normal text-primary">
+                            <Check className="h-3 w-3" />
+                            {t('projects.active')}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs font-normal text-amber-600">
+                            ⚠️ {t('projects.invalidKey')}
+                          </span>
+                        )
                       )}
                     </CardTitle>
                     {project.description && (
@@ -143,17 +151,34 @@ export const ProjectsPage: React.FC = () => {
                     <p className="text-muted-foreground">Statut</p>
                     <p>{project.is_active ? 'Actif' : 'Inactif'}</p>
                   </div>
+                  {project.owner_username && (
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">Créé par</p>
+                      <p className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {project.owner_username}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                {activeProjectId !== project.id && (
+                {activeProjectId === project.id && !activeApiKey ? (
+                  <Button
+                    variant="outline"
+                    className="w-full border-amber-500 text-amber-600 hover:bg-amber-50"
+                    onClick={() => handleSelectProject(project.id)}
+                  >
+                    {t('projects.invalidKeyClickToChange')}
+                  </Button>
+                ) : activeProjectId !== project.id ? (
                   <Button
                     variant="outline"
                     className="w-full"
                     onClick={() => handleSelectProject(project.id)}
                   >
-                    Sélectionner ce projet
+                    {t('projects.selectProject')}
                   </Button>
-                )}
+                ) : null}
               </CardContent>
             </Card>
           ))}

@@ -3,7 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import { useAuthStore } from '@/store/authStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface DashboardLayoutProps {
@@ -18,7 +18,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, isAdmin, setLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   // Initialize theme from localStorage
   useEffect(() => {
@@ -27,15 +30,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       document.documentElement.classList.add('dark');
     }
   }, []);
-
-  // Check initial loading state
-  useEffect(() => {
-    // Simulate checking token validity
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [setLoading]);
 
   // Auth guard
   useEffect(() => {
@@ -46,7 +40,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   // Admin guard
   useEffect(() => {
-    if (!isLoading && requireAdmin && !isAdmin()) {
+    if (!isLoading && requireAdmin && !isAdmin) {
       navigate('/dashboard');
     }
   }, [isLoading, requireAdmin, isAdmin, navigate]);
@@ -59,7 +53,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     return null;
   }
 
-  if (requireAdmin && !isAdmin()) {
+  if (requireAdmin && !isAdmin) {
     return null;
   }
 

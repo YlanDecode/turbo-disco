@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { MessageSquare, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isLoading: authLoading } = useAuth();
@@ -18,7 +21,7 @@ export const LoginPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Récupérer l'URL de redirection après login
+  const appName = import.meta.env.VITE_APP_NAME || 'Assistant';
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,21 +29,21 @@ export const LoginPage: React.FC = () => {
     setError(null);
 
     if (!username.trim() || !password.trim()) {
-      setError('Veuillez remplir tous les champs');
+      setError(t('auth.fillAllFields'));
       return;
     }
 
     setIsSubmitting(true);
     try {
       await login(username, password);
-      toast.success('Connexion réussie');
+      toast.success(t('auth.loginSuccess'));
       navigate(from, { replace: true });
     } catch (err: unknown) {
       const errorMessage = err instanceof Error
         ? err.message
-        : (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Identifiants invalides';
+        : (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t('auth.invalidCredentials');
       setError(errorMessage);
-      toast.error('Échec de la connexion');
+      toast.error(t('auth.loginError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -50,64 +53,73 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher variant="dropdown" />
+      </div>
+
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <MessageSquare className="h-12 w-12 text-primary" />
+            <MessageSquare className="h-12 w-12 text-primary" aria-hidden="true" />
           </div>
-          <CardTitle className="text-2xl font-bold">Connexion</CardTitle>
+          <CardTitle className="text-2xl font-bold">{t('auth.loginTitle')}</CardTitle>
           <CardDescription>
-            Connectez-vous à votre compte {import.meta.env.VITE_APP_NAME || 'Assistant'}
+            {t('auth.loginDescription', { appName })}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {error && (
-              <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+              <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md" role="alert">
                 {error}
               </div>
             )}
 
             <div className="space-y-2">
               <label htmlFor="username" className="text-sm font-medium">
-                Nom d'utilisateur
+                {t('auth.username')}
               </label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Votre nom d'utilisateur"
+                placeholder={t('auth.usernamePlaceholder')}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
                 autoComplete="username"
                 autoFocus
+                aria-required="true"
+                aria-invalid={error ? 'true' : 'false'}
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
-                Mot de passe
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Votre mot de passe"
+                  placeholder={t('auth.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
                   autoComplete="current-password"
+                  aria-required="true"
+                  aria-invalid={error ? 'true' : 'false'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4" aria-hidden="true" />
                   )}
                 </button>
               </div>
@@ -116,18 +128,18 @@ export const LoginPage: React.FC = () => {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connexion en cours...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  {t('auth.loggingIn')}
                 </>
               ) : (
-                'Se connecter'
+                t('auth.loginButton')
               )}
             </Button>
 
             <div className="text-center text-sm text-muted-foreground">
-              Pas encore de compte ?{' '}
-              <Link to="/signup" className="text-primary hover:underline">
-                Créer un compte
+              {t('auth.noAccount')}{' '}
+              <Link to="/signup" className="text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded">
+                {t('auth.createAccount')}
               </Link>
             </div>
           </form>

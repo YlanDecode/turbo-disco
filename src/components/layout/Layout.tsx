@@ -15,10 +15,10 @@ export const Layout: React.FC = () => {
   const navigate = useNavigate();
 
   const navigation = [
-    { name: 'Chat', href: '/chat', icon: MessageSquare },
-    { name: 'Projets', href: '/projects', icon: FolderKanban },
-    { name: 'RAG', href: '/rag', icon: FileText },
-    { name: 'Paramètres', href: '/settings', icon: Settings },
+    { name: 'Chat', href: '/chat', icon: MessageSquare, requiresProject: true },
+    { name: 'Projets', href: '/projects', icon: FolderKanban, requiresProject: false },
+    { name: 'RAG', href: '/rag', icon: FileText, requiresProject: true },
+    { name: 'Paramètres', href: '/settings', icon: Settings, requiresProject: false },
   ];
 
   const handleLogout = async () => {
@@ -44,18 +44,24 @@ export const Layout: React.FC = () => {
                 {import.meta.env.VITE_APP_NAME || 'Assistant'}
               </span>
             </Link>
-            {projectId && (
+            {isAuthenticated && (
               <nav className="flex items-center space-x-6 text-sm font-medium">
                 {navigation.map((item) => {
                   const isActive = location.pathname.startsWith(item.href);
+                  const isDisabled = item.requiresProject && !projectId;
                   return (
                     <Link
                       key={item.name}
-                      to={item.href}
+                      to={isDisabled ? '#' : item.href}
+                      onClick={isDisabled ? (e) => e.preventDefault() : undefined}
                       className={cn(
-                        'transition-colors hover:text-foreground/80',
-                        isActive ? 'text-foreground' : 'text-foreground/60'
+                        'transition-colors',
+                        isDisabled
+                          ? 'text-foreground/30 cursor-not-allowed'
+                          : 'hover:text-foreground/80',
+                        isActive && !isDisabled ? 'text-foreground' : !isDisabled && 'text-foreground/60'
                       )}
+                      title={isDisabled ? 'Sélectionnez un projet d\'abord' : undefined}
                     >
                       {item.name}
                     </Link>
@@ -93,22 +99,31 @@ export const Layout: React.FC = () => {
         </div>
 
         {/* Mobile menu */}
-        {mobileMenuOpen && (
+        {mobileMenuOpen && isAuthenticated && (
           <div className="md:hidden border-t">
             <nav className="container py-4 space-y-2">
               {navigation.map((item) => {
                 const isActive = location.pathname.startsWith(item.href);
+                const isDisabled = item.requiresProject && !projectId;
                 const Icon = item.icon;
                 return (
                   <Link
                     key={item.name}
-                    to={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
+                    to={isDisabled ? '#' : item.href}
+                    onClick={(e) => {
+                      if (isDisabled) {
+                        e.preventDefault();
+                      } else {
+                        setMobileMenuOpen(false);
+                      }
+                    }}
                     className={cn(
                       'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors',
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-foreground/60 hover:bg-muted'
+                      isDisabled
+                        ? 'text-foreground/30 cursor-not-allowed'
+                        : isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-foreground/60 hover:bg-muted'
                     )}
                   >
                     <Icon className="h-4 w-4" />

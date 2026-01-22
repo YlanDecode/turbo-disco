@@ -38,14 +38,15 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, []);
 
   useEffect(() => {
-    // Écouter les événements d'erreur d'authentification
-    const handleAuthError = () => {
-      setProjectId(null);
+    // Écouter les événements d'erreur d'authentification projet (clé API invalide)
+    const handleProjectAuthError = () => {
+      // Effacer seulement la clé API, garder le projet sélectionné
+      // pour que l'utilisateur puisse ré-entrer une clé valide
       setApiKey(null);
     };
 
-    window.addEventListener('auth-error', handleAuthError);
-    return () => window.removeEventListener('auth-error', handleAuthError);
+    window.addEventListener('project-auth-error', handleProjectAuthError);
+    return () => window.removeEventListener('project-auth-error', handleProjectAuthError);
   }, []);
 
   const setProject = (newProjectId: string, newApiKey: string, newProjectData?: ProjectResponse) => {

@@ -118,20 +118,46 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Helper pour déterminer si une erreur 401 est liée au projet (API key) ou au token utilisateur
+const isProjectAuthError = (error: AxiosError<{ detail: string }>): boolean => {
+  const url = error.config?.url || '';
+  const detail = error.response?.data?.detail?.toLowerCase() || '';
+
+  // Endpoints qui utilisent la clé API projet
+  const projectEndpoints = ['/conversations', '/chat', '/documents', '/search'];
+  const isProjectEndpoint = projectEndpoints.some(endpoint => url.includes(endpoint));
+
+  // Messages d'erreur liés à la clé API
+  const apiKeyErrorMessages = ['api key', 'api_key', 'apikey', 'x-api-key'];
+  const isApiKeyError = apiKeyErrorMessages.some(msg => detail.includes(msg));
+
+  // Vérifier si la requête avait un header X-API-Key
+  const hadApiKeyHeader = !!error.config?.headers?.['X-API-Key'];
+
+  return isProjectEndpoint || isApiKeyError || (hadApiKeyHeader && !detail.includes('token'));
+};
+
 // Intercepteur de réponse pour gérer les erreurs
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError<{ detail: string }>) => {
     if (error.response) {
       const { status, data } = error.response;
-      
+
       switch (status) {
         case 401:
-          console.error('❌ API Key invalide ou manquante');
-          // Optionnel : rediriger vers la page de sélection de projet
-          clearApiKey();
-          clearActiveProject();
-          window.dispatchEvent(new Event('auth-error'));
+          if (isProjectAuthError(error)) {
+            // Erreur liée à la clé API du projet
+            console.error('❌ Clé API projet invalide ou manquante');
+            // Effacer seulement la clé API, garder le projet sélectionné
+            clearApiKey();
+            // Événement spécifique pour les erreurs projet (ne déconnecte pas l'utilisateur)
+            window.dispatchEvent(new Event('project-auth-error'));
+          } else {
+            // Erreur liée au token JWT utilisateur
+            console.error('❌ Token utilisateur invalide ou expiré');
+            window.dispatchEvent(new Event('auth-error'));
+          }
           break;
         
         case 403:

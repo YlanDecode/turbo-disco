@@ -4,6 +4,10 @@ import type {
   UpdateProjectRequest,
   ProjectResponse,
   ProjectListResponse,
+  RevealKeyResponse,
+  RotateKeyResponse,
+  RevokeKeyResponse,
+  RegenerateKeyResponse,
 } from '../types';
 import {
   createProject,
@@ -11,7 +15,10 @@ import {
   getProject,
   updateProject,
   deleteProject,
+  revealProjectApiKey,
   rotateProjectApiKey,
+  revokeProjectApiKey,
+  regenerateProjectApiKey,
 } from '../endpoints/projects';
 
 // Lister les projets
@@ -75,12 +82,46 @@ export const useDeleteProject = () => {
   });
 };
 
-// Rotation de clé API
+// ==================== API Key Management Hooks ====================
+
+// Reveal API key (show full key)
+export const useRevealApiKey = () => {
+  return useMutation<RevealKeyResponse, Error, string>({
+    mutationFn: (projectId: string) => revealProjectApiKey(projectId),
+  });
+};
+
+// Rotate API key (24h grace period)
 export const useRotateApiKey = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<RotateKeyResponse, Error, string>({
     mutationFn: (projectId: string) => rotateProjectApiKey(projectId),
+    onSuccess: (_, projectId) => {
+      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+    },
+  });
+};
+
+// Revoke API key (disable project)
+export const useRevokeApiKey = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<RevokeKeyResponse, Error, string>({
+    mutationFn: (projectId: string) => revokeProjectApiKey(projectId),
+    onSuccess: (_, projectId) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+    },
+  });
+};
+
+// Regenerate API key (immediate new key)
+export const useRegenerateApiKey = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<RegenerateKeyResponse, Error, string>({
+    mutationFn: (projectId: string) => regenerateProjectApiKey(projectId),
     onSuccess: (_, projectId) => {
       queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
     },

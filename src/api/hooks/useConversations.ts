@@ -17,7 +17,7 @@ export const useConversations = (params?: { page?: number; limit?: number; offse
   const apiKey = getApiKey();
 
   return useQuery<ConversationListResponse>({
-    queryKey: ['conversations', params],
+    queryKey: ['conversations', apiKey, params],
     queryFn: () => listConversations(params),
     enabled: !!apiKey,
   });
@@ -28,7 +28,7 @@ export const useConversation = (conversationId: string, limit?: number) => {
   const apiKey = getApiKey();
 
   return useQuery<ConversationDetailResponse>({
-    queryKey: ['conversations', conversationId, limit],
+    queryKey: ['conversations', apiKey, conversationId, limit],
     queryFn: () => getConversation(conversationId, limit),
     enabled: !!conversationId && !!apiKey,
   });

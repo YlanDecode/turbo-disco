@@ -1,7 +1,11 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProjectProvider } from './contexts/ProjectContext';
+
+// Initialize i18n
+import i18n from './i18n';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -16,8 +20,25 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AuditLogsPage } from './pages/admin/AuditLogsPage';
-import { Toaster } from 'sonner';
+import { ApiKeysPage } from './pages/settings/ApiKeysPage';
+import { Toaster, toast } from 'sonner';
 import './index.css';
+
+// Composant pour gérer les notifications d'erreur globales
+const GlobalErrorHandler: React.FC = () => {
+  useEffect(() => {
+    const handleProjectAuthError = () => {
+      toast.error(i18n.t('errors.projectApiKeyInvalid'), {
+        description: i18n.t('errors.projectApiKeyInvalidDescription'),
+      });
+    };
+
+    window.addEventListener('project-auth-error', handleProjectAuthError);
+    return () => window.removeEventListener('project-auth-error', handleProjectAuthError);
+  }, []);
+
+  return null;
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +98,19 @@ function App() {
                 <Route path="audit-logs" element={<AuditLogsPage />} />
               </Route>
 
+              {/* Routes Settings */}
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/settings/api-keys" replace />} />
+                <Route path="api-keys" element={<ApiKeysPage />} />
+              </Route>
+
               {/* Routes protégées avec Layout classique */}
               <Route
                 path="/"
@@ -99,6 +133,7 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Toaster position="top-right" richColors />
+            <GlobalErrorHandler />
           </BrowserRouter>
         </ProjectProvider>
       </AuthProvider>

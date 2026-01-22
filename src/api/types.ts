@@ -33,12 +33,14 @@ export interface ProjectResponse {
   name: string;
   slug: string;
   description?: string | null;
-  api_key?: string | null; // Seulement lors de la création
+  api_key?: string | null;
   api_key_masked: string;
   created_at: string;
   updated_at: string;
   is_active: boolean;
   config: Record<string, unknown>;
+  owner_id?: string;
+  owner_username?: string;
 }
 
 export interface PaginationMetadata {
@@ -59,6 +61,28 @@ export interface RotateKeyResponse {
   new_api_key: string;
   warning: string;
   rotated_at: string;
+}
+
+// Reveal API Key response
+export interface RevealKeyResponse {
+  project_id: string;
+  api_key: string;
+  warning: string;
+}
+
+// Revoke API Key response
+export interface RevokeKeyResponse {
+  project_id: string;
+  message: string;
+  revoked_at: string;
+}
+
+// Regenerate API Key response
+export interface RegenerateKeyResponse {
+  project_id: string;
+  new_api_key: string;
+  message: string;
+  regenerated_at: string;
 }
 
 export interface ChatRequest {
@@ -111,6 +135,9 @@ export interface ConversationResponse {
   created_at: string;
   updated_at: string;
   message_count: number;
+  // Informations sur l'utilisateur (si disponibles)
+  user_id?: string;
+  username?: string;
 }
 
 export interface MessageResponse {
@@ -161,6 +188,7 @@ export interface UserCreate {
 export interface UserRead {
   id: string;
   username: string;
+  role?: 'user' | 'admin' | 'super_admin';
 }
 
 export interface Token {

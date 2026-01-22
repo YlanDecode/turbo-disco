@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, MessageSquare, Trash2, Loader2 } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Loader2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConversations, useDeleteConversation } from '@/api/hooks/useConversations';
 import { type ConversationResponse } from '@/api/types';
@@ -85,9 +85,15 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                     <span className="truncate">
                       {formatDate(conv.created_at) || "Nouvelle conversation"}
                     </span>
-                    <span className="text-xs opacity-70">
-                      {formatDate(conv.updated_at || conv.created_at)}
-                    </span>
+                    <div className="flex items-center gap-2 text-xs opacity-70">
+                      {conv.username && (
+                        <span className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {conv.username}
+                        </span>
+                      )}
+                      <span>{conv.message_count} msg</span>
+                    </div>
                   </div>
                 </div>
                 
