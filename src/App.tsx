@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
+import { DashboardLayout } from './components/layout/DashboardLayout';
 import { HomePage } from './pages/HomePage';
 import { ChatPage } from './pages/ChatPage';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -11,6 +12,10 @@ import { NewProjectPage } from './pages/NewProjectPage';
 import { RAGPage } from './pages/RAGPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { AuditLogsPage } from './pages/admin/AuditLogsPage';
 import { Toaster } from 'sonner';
 import './index.css';
 
@@ -31,11 +36,48 @@ function App() {
         <ProjectProvider>
           <BrowserRouter>
             <Routes>
-              {/* Routes publiques (sans Layout) */}
+              {/* Routes publiques */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
 
-              {/* Routes protégées (avec Layout) */}
+              {/* Routes avec DashboardLayout (nouvelle interface admin) */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<DashboardPage />} />
+              </Route>
+
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<ProfilePage />} />
+              </Route>
+
+              {/* Routes Admin */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout requireAdmin />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/admin/users" replace />} />
+                <Route path="users" element={<AdminUsersPage />} />
+                <Route path="audit-logs" element={<AuditLogsPage />} />
+              </Route>
+
+              {/* Routes protégées avec Layout classique */}
               <Route
                 path="/"
                 element={
@@ -50,9 +92,11 @@ function App() {
                 <Route path="projects" element={<ProjectsPage />} />
                 <Route path="projects/new" element={<NewProjectPage />} />
                 <Route path="rag" element={<RAGPage />} />
-                <Route path="settings" element={<Navigate to="/" replace />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="settings" element={<Navigate to="/dashboard" replace />} />
               </Route>
+
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Toaster position="top-right" richColors />
           </BrowserRouter>

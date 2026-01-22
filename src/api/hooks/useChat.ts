@@ -29,7 +29,7 @@ export const useChatStream = () => {
         k?: number;
         maxTokens?: number;
         onToken: (token: string) => void;
-        onMeta?: (meta: { contexts?: string[], conversation_id?: string }) => void;
+        onMeta?: (meta: { contexts?: string[]; conversation_id?: string }) => void;
         onComplete?: () => void;
       }
     ) => {

@@ -10,21 +10,27 @@ import {
   getConversation,
   deleteConversation,
 } from '../endpoints/conversations';
+import { getApiKey } from '../client';
 
-// Lister les conversations
-export const useConversations = (params?: { page?: number; limit?: number }) => {
+// Lister les conversations (utilise X-API-Key pour identifier le projet)
+export const useConversations = (params?: { page?: number; limit?: number; offset?: number }) => {
+  const apiKey = getApiKey();
+
   return useQuery<ConversationListResponse>({
     queryKey: ['conversations', params],
     queryFn: () => listConversations(params),
+    enabled: !!apiKey,
   });
 };
 
-// Obtenir une conversation
+// Obtenir une conversation avec ses messages
 export const useConversation = (conversationId: string, limit?: number) => {
+  const apiKey = getApiKey();
+
   return useQuery<ConversationDetailResponse>({
     queryKey: ['conversations', conversationId, limit],
     queryFn: () => getConversation(conversationId, limit),
-    enabled: !!conversationId,
+    enabled: !!conversationId && !!apiKey,
   });
 };
 

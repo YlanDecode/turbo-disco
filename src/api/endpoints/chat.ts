@@ -1,11 +1,15 @@
 import { apiClient } from '../client';
 import type { ChatRequest, ChatResponse } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://depressively-tetched-therese.ngrok-free.dev/api/v1';
+// Ensure HTTPS is always used
+const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://depressively-tetched-therese.ngrok-free.dev/api/v1';
+const API_BASE_URL = rawApiUrl.replace(/^http:\/\//i, 'https://');
 
-// Chat avec réponse complète
-export const sendChatMessage = async (data: ChatRequest): Promise<ChatResponse> => {
-  const response = await apiClient.post<ChatResponse>('/chat', data);
+// Chat avec réponse complète (utilise X-API-Key pour identifier le projet)
+export const sendChatMessage = async (
+  data: ChatRequest
+): Promise<ChatResponse> => {
+  const response = await apiClient.post<ChatResponse>(`/chat`, data);
   return response.data;
 };
 
@@ -23,7 +27,6 @@ export interface SSECallbacks {
   onConversationId?: (id: string) => void;
 }
 
-// Chat avec streaming SSE
 export const sendChatMessageStream = async (
   data: ChatRequest,
   callbacks: SSECallbacks,
@@ -71,19 +74,19 @@ export const sendChatMessageStream = async (
         // Détecter le type d'événement
         if (line.startsWith('event: ')) {
           currentEvent = line.slice(7).trim();
-          
+
           // Si on reçoit event: done, on arrête le stream
           if (currentEvent === 'done') {
             streamEnded = true;
             callbacks.onComplete();
             break;
           }
-          
+
           // Si on reçoit event: error, on prépare à gérer l'erreur
           if (currentEvent === 'error') {
             continue;
           }
-          
+
           continue;
         }
 
@@ -105,19 +108,19 @@ export const sendChatMessageStream = async (
 
           try {
             const parsed = JSON.parse(data);
-            
+
             if (parsed.contexts || parsed.conversation_id) {
               callbacks.onMeta(parsed as SSEMetaEvent);
               if (parsed.conversation_id && callbacks.onConversationId) {
                 callbacks.onConversationId(parsed.conversation_id);
               }
               currentEvent = '';
-            } 
+            }
             // Métadonnées de fin (response_time_ms)
             else if (parsed.response_time_ms !== undefined) {
               // Ignorer les métadonnées de fin
               currentEvent = '';
-            } 
+            }
             // Sinon c'est un token texte
             else {
               callbacks.onToken(data);
@@ -128,14 +131,14 @@ export const sendChatMessageStream = async (
               callbacks.onToken(data);
             }
           }
-          
+
           // Réinitialiser l'événement après traitement
           if (currentEvent === 'meta') {
             currentEvent = '';
           }
         }
       }
-      
+
       if (streamEnded) break;
     }
   } catch (error) {
@@ -150,6 +153,6 @@ export const sendChatMessageStream = async (
 
 // Health check du chatbot
 export const checkChatbotHealth = async (): Promise<{ status: string; message: string }> => {
-  const response = await apiClient.get('/chat/debug');
+  const response = await apiClient.get('/health');
   return response.data;
 };

@@ -5,6 +5,7 @@ import type {
   RebuildBody,
   IngestDirBody,
   FileListResponse,
+  RAGFileListResponse,
 } from '../types';
 import {
   debugRAG,
@@ -22,9 +23,12 @@ import {
   uploadProjectFile,
   ingestProjectDirectory,
   listProjectFiles,
+  deleteProjectFile,
+  reindexProject,
 } from '../endpoints/rag';
+import { getActiveProject } from '../client';
 
-// === Hooks globaux ===
+// ==================== Global RAG Hooks ====================
 
 export const useRAGDebug = () => {
   return useQuery<RAGDebugResponse>({
@@ -98,13 +102,18 @@ export const useListFiles = () => {
   });
 };
 
-// === Hooks par projet ===
+// ==================== Project-scoped RAG Hooks ====================
 
-export const useProjectRAGDebug = (projectId: string) => {
+export const useProjectRAGDebug = (projectId?: string) => {
+  const activeProjectId = projectId || getActiveProject();
+
   return useQuery<RAGDebugResponse>({
-    queryKey: ['projects', projectId, 'rag', 'debug'],
-    queryFn: () => debugProjectRAG(projectId),
-    enabled: !!projectId,
+    queryKey: ['projects', activeProjectId, 'rag', 'debug'],
+    queryFn: () => {
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return debugProjectRAG(activeProjectId);
+    },
+    enabled: !!activeProjectId,
   });
 };
 
@@ -112,14 +121,18 @@ export const useIngestProjectDocuments = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, data }: { projectId: string; data: IngestBody }) =>
-      ingestProjectDocuments(projectId, data),
+    mutationFn: ({ projectId, data }: { projectId?: string; data: IngestBody }) => {
+      const activeProjectId = projectId || getActiveProject();
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return ingestProjectDocuments(activeProjectId, data);
+    },
     onSuccess: (_, variables) => {
+      const activeProjectId = variables.projectId || getActiveProject();
       queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'rag', 'debug'],
+        queryKey: ['projects', activeProjectId, 'rag', 'debug'],
       });
       queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'rag', 'files'],
+        queryKey: ['projects', activeProjectId, 'rag', 'files'],
       });
     },
   });
@@ -129,11 +142,37 @@ export const useRebuildProjectIndexes = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, data }: { projectId: string; data?: RebuildBody }) =>
-      rebuildProjectIndexes(projectId, data),
+    mutationFn: ({ projectId, data }: { projectId?: string; data?: RebuildBody }) => {
+      const activeProjectId = projectId || getActiveProject();
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return rebuildProjectIndexes(activeProjectId, data);
+    },
     onSuccess: (_, variables) => {
+      const activeProjectId = variables.projectId || getActiveProject();
       queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'rag', 'debug'],
+        queryKey: ['projects', activeProjectId, 'rag', 'debug'],
+      });
+    },
+  });
+};
+
+// Réindexer les documents du projet (nouvelle API)
+export const useReindexProject = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (projectId?: string) => {
+      const activeProjectId = projectId || getActiveProject();
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return reindexProject(activeProjectId);
+    },
+    onSuccess: (_, projectId) => {
+      const activeProjectId = projectId || getActiveProject();
+      queryClient.invalidateQueries({
+        queryKey: ['projects', activeProjectId, 'rag', 'debug'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['projects', activeProjectId, 'rag', 'files'],
       });
     },
   });
@@ -143,11 +182,15 @@ export const useDeleteProjectContext = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, contextName }: { projectId: string; contextName: string }) =>
-      deleteProjectContext(projectId, contextName),
+    mutationFn: ({ projectId, contextName }: { projectId?: string; contextName: string }) => {
+      const activeProjectId = projectId || getActiveProject();
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return deleteProjectContext(activeProjectId, contextName);
+    },
     onSuccess: (_, variables) => {
+      const activeProjectId = variables.projectId || getActiveProject();
       queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'rag', 'debug'],
+        queryKey: ['projects', activeProjectId, 'rag', 'debug'],
       });
     },
   });
@@ -157,10 +200,15 @@ export const useDeleteAllProjectContexts = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (projectId: string) => deleteAllProjectContexts(projectId),
+    mutationFn: (projectId?: string) => {
+      const activeProjectId = projectId || getActiveProject();
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return deleteAllProjectContexts(activeProjectId);
+    },
     onSuccess: (_, projectId) => {
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'rag', 'debug'] });
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'rag', 'files'] });
+      const activeProjectId = projectId || getActiveProject();
+      queryClient.invalidateQueries({ queryKey: ['projects', activeProjectId, 'rag', 'debug'] });
+      queryClient.invalidateQueries({ queryKey: ['projects', activeProjectId, 'rag', 'files'] });
     },
   });
 };
@@ -169,14 +217,40 @@ export const useUploadProjectFile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, file }: { projectId: string; file: File }) =>
-      uploadProjectFile(projectId, file),
+    mutationFn: ({ projectId, file }: { projectId?: string; file: File }) => {
+      const activeProjectId = projectId || getActiveProject();
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return uploadProjectFile(activeProjectId, file);
+    },
     onSuccess: (_, variables) => {
+      const activeProjectId = variables.projectId || getActiveProject();
       queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'rag', 'debug'],
+        queryKey: ['projects', activeProjectId, 'rag', 'debug'],
       });
       queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'rag', 'files'],
+        queryKey: ['projects', activeProjectId, 'rag', 'files'],
+      });
+    },
+  });
+};
+
+// Supprimer un fichier RAG du projet (nouvelle API)
+export const useDeleteProjectFile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, fileId }: { projectId?: string; fileId: string }) => {
+      const activeProjectId = projectId || getActiveProject();
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return deleteProjectFile(activeProjectId, fileId);
+    },
+    onSuccess: (_, variables) => {
+      const activeProjectId = variables.projectId || getActiveProject();
+      queryClient.invalidateQueries({
+        queryKey: ['projects', activeProjectId, 'rag', 'debug'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['projects', activeProjectId, 'rag', 'files'],
       });
     },
   });
@@ -186,23 +260,32 @@ export const useIngestProjectDirectory = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, data }: { projectId: string; data: IngestDirBody }) =>
-      ingestProjectDirectory(projectId, data),
+    mutationFn: ({ projectId, data }: { projectId?: string; data: IngestDirBody }) => {
+      const activeProjectId = projectId || getActiveProject();
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return ingestProjectDirectory(activeProjectId, data);
+    },
     onSuccess: (_, variables) => {
+      const activeProjectId = variables.projectId || getActiveProject();
       queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'rag', 'debug'],
+        queryKey: ['projects', activeProjectId, 'rag', 'debug'],
       });
       queryClient.invalidateQueries({
-        queryKey: ['projects', variables.projectId, 'rag', 'files'],
+        queryKey: ['projects', activeProjectId, 'rag', 'files'],
       });
     },
   });
 };
 
-export const useListProjectFiles = (projectId: string) => {
-  return useQuery<FileListResponse>({
-    queryKey: ['projects', projectId, 'rag', 'files'],
-    queryFn: () => listProjectFiles(projectId),
-    enabled: !!projectId,
+export const useListProjectFiles = (projectId?: string) => {
+  const activeProjectId = projectId || getActiveProject();
+
+  return useQuery<RAGFileListResponse>({
+    queryKey: ['projects', activeProjectId, 'rag', 'files'],
+    queryFn: () => {
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return listProjectFiles(activeProjectId);
+    },
+    enabled: !!activeProjectId,
   });
 };

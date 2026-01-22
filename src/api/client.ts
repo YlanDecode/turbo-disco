@@ -1,7 +1,9 @@
 import axios, { AxiosError } from 'axios';
 import CryptoJS from 'crypto-js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://depressively-tetched-therese.ngrok-free.dev/api/v1';
+// Ensure HTTPS is always used for the API URL
+const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://depressively-tetched-therese.ngrok-free.dev/api/v1';
+const API_BASE_URL = rawApiUrl.replace(/^http:\/\//i, 'https://');
 const IS_NGROK = /ngrok/i.test(String(API_BASE_URL));
 
 // Clé de chiffrement pour le localStorage (NE PAS commit en production !)

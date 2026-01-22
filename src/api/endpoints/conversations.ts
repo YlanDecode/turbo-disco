@@ -6,12 +6,18 @@ import type {
   CreateConversationBody,
 } from '../types';
 
-// Lister les conversations
-export const listConversations = async (params?: {
-  page?: number;
-  limit?: number;
-}): Promise<ConversationListResponse> => {
-  const response = await apiClient.get<ConversationListResponse>('/conversations', { params });
+// Lister les conversations (utilise X-API-Key pour identifier le projet)
+export const listConversations = async (
+  params?: {
+    page?: number;
+    limit?: number;
+    offset?: number;
+  }
+): Promise<ConversationListResponse> => {
+  const response = await apiClient.get<ConversationListResponse>(
+    `/conversations`,
+    { params }
+  );
   return response.data;
 };
 
@@ -19,7 +25,10 @@ export const listConversations = async (params?: {
 export const createConversation = async (
   data?: CreateConversationBody
 ): Promise<ConversationResponse> => {
-  const response = await apiClient.post<ConversationResponse>('/conversations', data || {});
+  const response = await apiClient.post<ConversationResponse>(
+    `/conversations`,
+    data || {}
+  );
   return response.data;
 };
 
@@ -36,6 +45,8 @@ export const getConversation = async (
 };
 
 // Supprimer une conversation
-export const deleteConversation = async (conversationId: string): Promise<void> => {
+export const deleteConversation = async (
+  conversationId: string
+): Promise<void> => {
   await apiClient.delete(`/conversations/${conversationId}`);
 };
