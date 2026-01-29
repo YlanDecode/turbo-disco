@@ -80,6 +80,7 @@
     "dashboard": "Dashboard",
     "chat": "Chat",
     "projects": "Projects",
+    "rag": "RAG Documents",
     "users": "Users",
     "auditLogs": "Audit Logs",
     "apiKeys": "API Keys",

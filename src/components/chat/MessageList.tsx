@@ -23,16 +23,34 @@ export const MessageList: React.FC<MessageListProps> = ({
   projectData,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [expandedContexts, setExpandedContexts] = useState<Set<string>>(new Set());
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const prevMessagesLength = useRef(messages.length);
 
   // Extraire les infos du projet avec typage explicite
   const cfg = projectData?.config as { assistant_name?: string; company_name?: string } | undefined;
   const assistantName: string = cfg?.assistant_name ?? 'Assistant';
   const companyName: string = cfg?.company_name ?? projectData?.name ?? 'Assistant';
 
+  // Détecter si l'utilisateur est proche du bas
+  const handleScroll = () => {
+    if (!containerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+    const threshold = 100; // pixels de marge
+    setIsNearBottom(scrollHeight - scrollTop - clientHeight < threshold);
+  };
+
+  // Scroll vers le bas uniquement si l'utilisateur est déjà en bas ou si c'est un nouveau message utilisateur
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingMessage]);
+    const isNewUserMessage = messages.length > prevMessagesLength.current;
+    prevMessagesLength.current = messages.length;
+
+    // Scroller si: près du bas OU nouveau message envoyé par l'utilisateur
+    if (isNearBottom || isNewUserMessage) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, streamingMessage, isNearBottom]);
 
   const toggleContexts = (messageId: string) => {
     setExpandedContexts((prev) => {
@@ -47,7 +65,10 @@ export const MessageList: React.FC<MessageListProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.length === 0 && !streamingMessage && (
         <div className="flex items-center justify-center h-full text-center text-muted-foreground">
           <div className="max-w-md">

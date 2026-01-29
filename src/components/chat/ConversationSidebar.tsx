@@ -45,7 +45,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   };
 
   return (
-    <div className={`flex flex-col h-full border-r bg-muted/10 ${className}`}>
+    <div className={`flex flex-col h-full bg-muted/10 ${className}`}>
       <div className="p-4 border-b">
         <Button 
           onClick={onNewChat} 

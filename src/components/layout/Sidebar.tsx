@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Bot,
+  Database,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ const mainNavItems: NavItem[] = [
   { labelKey: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
   { labelKey: 'nav.chat', href: '/chat', icon: MessageSquare },
   { labelKey: 'nav.projects', href: '/projects', icon: FolderKanban },
+  { labelKey: 'nav.rag', href: '/rag', icon: Database },
 ];
 
 const adminNavItems: NavItem[] = [

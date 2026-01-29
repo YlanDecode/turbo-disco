@@ -7,9 +7,7 @@ import { ProjectProvider } from './contexts/ProjectContext';
 // Initialize i18n
 import i18n from './i18n';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { Layout } from './components/layout/Layout';
 import { DashboardLayout } from './components/layout/DashboardLayout';
-import { HomePage } from './pages/HomePage';
 import { ChatPage } from './pages/ChatPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { NewProjectPage } from './pages/NewProjectPage';
@@ -117,22 +115,51 @@ function App() {
                 <Route path="notifications" element={<NotificationsPage />} />
               </Route>
 
-              {/* Routes protégées avec Layout classique */}
+              {/* Routes protégées avec DashboardLayout (interface unifiée) */}
               <Route
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <Layout />
+                    <DashboardLayout />
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<HomePage />} />
-                <Route path="chat" element={<ChatPage />} />
-                <Route path="chat/:conversationId" element={<ChatPage />} />
-                <Route path="projects" element={<ProjectsPage />} />
-                <Route path="projects/new" element={<NewProjectPage />} />
-                <Route path="rag" element={<RAGPage />} />
-                <Route path="settings" element={<Navigate to="/dashboard" replace />} />
+                <Route index element={<Navigate to="/dashboard" replace />} />
+              </Route>
+
+              <Route
+                path="/chat"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<ChatPage />} />
+                <Route path=":conversationId" element={<ChatPage />} />
+              </Route>
+
+              <Route
+                path="/projects"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<ProjectsPage />} />
+                <Route path="new" element={<NewProjectPage />} />
+              </Route>
+
+              <Route
+                path="/rag"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<RAGPage />} />
               </Route>
 
               {/* Fallback */}
