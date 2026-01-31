@@ -30,3 +30,9 @@ export * from './widget';
 
 // Analytics
 export * from './analytics';
+
+// Activities
+export * from './activities';
+
+// Health & System
+export * from './health';

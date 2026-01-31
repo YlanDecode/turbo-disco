@@ -24,6 +24,7 @@ import {
   ingestProjectDirectory,
   listProjectFiles,
   deleteProjectFile,
+  downloadProjectFile,
   reindexProject,
 } from '../endpoints/rag';
 import { getActiveProject } from '../client';
@@ -234,15 +235,15 @@ export const useUploadProjectFile = () => {
   });
 };
 
-// Supprimer un fichier RAG du projet (nouvelle API)
+// Supprimer un fichier RAG du projet par son nom
 export const useDeleteProjectFile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, fileId }: { projectId?: string; fileId: string }) => {
+    mutationFn: ({ projectId, filename }: { projectId?: string; filename: string }) => {
       const activeProjectId = projectId || getActiveProject();
       if (!activeProjectId) throw new Error('Project ID manquant');
-      return deleteProjectFile(activeProjectId, fileId);
+      return deleteProjectFile(activeProjectId, filename);
     },
     onSuccess: (_, variables) => {
       const activeProjectId = variables.projectId || getActiveProject();
@@ -252,6 +253,17 @@ export const useDeleteProjectFile = () => {
       queryClient.invalidateQueries({
         queryKey: ['projects', activeProjectId, 'rag', 'files'],
       });
+    },
+  });
+};
+
+// Télécharger un fichier RAG du projet
+export const useDownloadProjectFile = () => {
+  return useMutation({
+    mutationFn: ({ projectId, filename }: { projectId?: string; filename: string }) => {
+      const activeProjectId = projectId || getActiveProject();
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return downloadProjectFile(activeProjectId, filename);
     },
   });
 };

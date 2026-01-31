@@ -308,6 +308,7 @@ export interface AdminUserListParams {
 }
 
 export interface ApproveUserRequest {
+  approved: boolean;
   send_email?: boolean;
 }
 
@@ -422,12 +423,15 @@ export interface APIKeyUsage {
 
 export type WebhookEventType =
   | 'message.created'
-  | 'message.failed'
+  | 'message.feedback'
   | 'conversation.started'
   | 'conversation.ended'
-  | 'feedback.received'
-  | 'rag.indexed'
-  | 'rag.failed';
+  | 'rag.context_updated'
+  | 'rag.rebuild_completed'
+  | 'api_key.created'
+  | 'api_key.rotated'
+  | 'rate_limit.exceeded'
+  | 'error.occurred';
 
 export interface Webhook {
   id: string;
@@ -679,4 +683,132 @@ export interface HealthResponse {
   database: 'ok' | 'error';
   redis: 'ok' | 'error';
   ollama: 'ok' | 'error';
+}
+
+// ==================== Analytics Dashboard ====================
+
+export interface AnalyticsDashboard {
+  // Full dashboard structure (when available)
+  overview?: {
+    total_conversations: number;
+    total_messages: number;
+    unique_users: number;
+    avg_response_time_ms: number;
+  };
+  satisfaction?: {
+    rate: number;
+    total_feedback: number;
+    trend: 'up' | 'down' | 'stable';
+  };
+  top_questions?: Array<{
+    question: string;
+    count: number;
+    last_asked: string;
+  }>;
+  recent_trends?: Array<{
+    date: string;
+    conversations: number;
+    messages: number;
+  }>;
+  // Alternative structure returned by some endpoints
+  trends?: Array<{
+    date: string;
+    conversations: number;
+    messages: number;
+    avg_response_time_ms?: number;
+    tokens_used?: number | null;
+    satisfaction_rate?: number | null;
+  }>;
+  granularity?: string | null;
+  period?: string;
+  project_id?: string;
+}
+
+// ==================== WebSocket Notifications ====================
+
+export type NotificationType =
+  | 'user_signup'
+  | 'user_approved'
+  | 'user_rejected'
+  | 'project_created'
+  | 'file_uploaded'
+  | 'conversation_started'
+  | 'system_alert';
+
+export interface WebSocketNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data?: Record<string, unknown>;
+  created_at: string;
+  read: boolean;
+}
+
+export interface WebSocketMessage {
+  type: 'notification' | 'unread_count' | 'pong';
+  payload: unknown;
+}
+
+// ==================== Activities ====================
+
+export type ActivityType =
+  | 'user_signup'
+  | 'user_approved'
+  | 'user_rejected'
+  | 'user_login'
+  | 'project_created'
+  | 'project_updated'
+  | 'project_deleted'
+  | 'file_uploaded'
+  | 'file_deleted'
+  | 'conversation_started'
+  | 'conversation_ended'
+  | 'webhook_created'
+  | 'webhook_triggered'
+  | 'api_key_created'
+  | 'api_key_rotated'
+  | 'system_alert'
+  | 'rag_indexed'
+  | 'rag_failed';
+
+export interface Activity {
+  id: string;
+  type: ActivityType;
+  title: string;
+  message: string;
+  data?: Record<string, unknown>;
+  user_id?: string;
+  project_id?: string;
+  created_at: string;
+  read: boolean;
+  read_at?: string | null;
+}
+
+export interface ActivityListParams {
+  type?: ActivityType;
+  read?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ActivityListResponse {
+  activities: Activity[];
+  pagination: PaginationMetadata;
+}
+
+export interface UnreadCountResponse {
+  count: number;
+}
+
+export interface MarkReadRequest {
+  read: boolean;
+}
+
+// ==================== WebSocket Status ====================
+
+export interface WebSocketStatus {
+  status: 'online' | 'offline';
+  connections: number;
+  uptime_seconds: number;
 }

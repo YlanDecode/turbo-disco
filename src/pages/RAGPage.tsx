@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { useUploadProjectFile, useListProjectFiles } from '@/api/hooks/useRAG';
+import { useUploadProjectFile, useListProjectFiles, useDeleteProjectFile, useDownloadProjectFile } from '@/api/hooks/useRAG';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, FileText, Loader2 } from 'lucide-react';
+import { Upload, FileText, Loader2, Trash2, Download } from 'lucide-react';
 import { formatFileSize, isValidFileExtension } from '@/lib/helpers';
 import { toast } from 'sonner';
 
@@ -16,7 +16,31 @@ export const RAGPage: React.FC = () => {
   const [uploading, setUploading] = useState(false);
 
   const uploadFile = useUploadProjectFile();
+  const deleteFile = useDeleteProjectFile();
+  const downloadFile = useDownloadProjectFile();
   const { data: filesData, isLoading: filesLoading } = useListProjectFiles(projectId || '');
+
+  const handleDelete = async (filename: string) => {
+    if (!projectId) return;
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer "${filename}" ?`)) return;
+
+    try {
+      await deleteFile.mutateAsync({ projectId, filename });
+      toast.success(`${filename} supprimé avec succès`);
+    } catch {
+      toast.error(`Erreur lors de la suppression de ${filename}`);
+    }
+  };
+
+  const handleDownload = async (filename: string) => {
+    if (!projectId) return;
+
+    try {
+      await downloadFile.mutateAsync({ projectId, filename });
+    } catch {
+      toast.error(`Erreur lors du téléchargement de ${filename}`);
+    }
+  };
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -150,10 +174,10 @@ export const RAGPage: React.FC = () => {
               </div>
             ) : filesData && filesData.files.length > 0 ? (
               <div className="space-y-2">
-                {filesData.files.map((file, idx) => (
+                {filesData.files.map((file) => (
                   <div
-                    key={idx}
-                    className="flex items-center justify-between p-3 border rounded-lg"
+                    key={file.id || file.filename}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <FileText className="h-5 w-5 text-muted-foreground" />
@@ -163,6 +187,27 @@ export const RAGPage: React.FC = () => {
                           {formatFileSize(file.size_bytes)}
                         </p>
                       </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownload(file.filename)}
+                        disabled={downloadFile.isPending}
+                        title="Télécharger"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(file.filename)}
+                        disabled={deleteFile.isPending}
+                        title="Supprimer"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}

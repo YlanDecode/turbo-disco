@@ -40,9 +40,9 @@ export const getUser = async (userId: string): Promise<UserProfile> => {
 // POST /admin/users/{user_id}/approve - Approuver un utilisateur
 export const approveUser = async (
   userId: string,
-  data?: ApproveUserRequest
+  data?: Partial<ApproveUserRequest>
 ): Promise<void> => {
-  await apiClient.post(`/admin/users/${userId}/approve`, data || {});
+  await apiClient.post(`/admin/users/${userId}/approve`, { approved: true, ...data });
 };
 
 // POST /admin/users/{user_id}/reject - Rejeter un utilisateur
@@ -53,12 +53,12 @@ export const rejectUser = async (
   await apiClient.post(`/admin/users/${userId}/reject`, data || {});
 };
 
-// PUT /admin/users/{user_id}/role - Modifier le rôle d'un utilisateur
+// POST /admin/users/{user_id}/role - Modifier le rôle d'un utilisateur
 export const updateUserRole = async (
   userId: string,
   data: UpdateRoleRequest
 ): Promise<void> => {
-  await apiClient.put(`/admin/users/${userId}/role`, data);
+  await apiClient.post(`/admin/users/${userId}/role`, data);
 };
 
 // POST /admin/users - Créer un utilisateur
@@ -67,21 +67,21 @@ export const createUser = async (data: AdminCreateUserRequest): Promise<UserProf
   return response.data;
 };
 
-// PATCH /admin/users/{user_id} - Modifier un utilisateur
+// POST /admin/users/{user_id} - Modifier un utilisateur
 export const updateUser = async (
   userId: string,
   data: AdminUpdateUserRequest
 ): Promise<UserProfile> => {
-  const response = await apiClient.patch<UserProfile>(`/admin/users/${userId}`, data);
+  const response = await apiClient.post<UserProfile>(`/admin/users/${userId}`, data);
   return response.data;
 };
 
-// PATCH /admin/users/{user_id}/password - Modifier le mot de passe d'un utilisateur
+// POST /admin/users/{user_id}/password - Modifier le mot de passe d'un utilisateur
 export const changeUserPassword = async (
   userId: string,
   data: AdminChangePasswordRequest
 ): Promise<void> => {
-  await apiClient.patch(`/admin/users/${userId}/password`, data);
+  await apiClient.post(`/admin/users/${userId}/password`, data);
 };
 
 // DELETE /admin/users/{user_id} - Supprimer un utilisateur
@@ -97,4 +97,22 @@ export const getAuditLogs = async (
 ): Promise<AuditLogListResponse> => {
   const response = await apiClient.get<AuditLogListResponse>('/admin/audit-logs', { params });
   return response.data;
+};
+
+// ==================== Stats & Cache ====================
+
+// GET /admin/stats - Statistiques globales
+export const getAdminStats = async (): Promise<Record<string, unknown>> => {
+  const response = await apiClient.get('/admin/stats');
+  return response.data;
+};
+
+// POST /admin/rag/warmup - Warmup du cache RAG
+export const warmupRAGCache = async (): Promise<void> => {
+  await apiClient.post('/admin/rag/warmup');
+};
+
+// DELETE /admin/cache/rag/{project_id} - Invalider le cache RAG d'un projet
+export const invalidateRAGCache = async (projectId: string): Promise<void> => {
+  await apiClient.delete(`/admin/cache/rag/${projectId}`);
 };

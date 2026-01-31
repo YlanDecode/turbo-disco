@@ -4,6 +4,7 @@ import type {
   ConversationListResponse,
   ConversationDetailResponse,
   CreateConversationBody,
+  MessageResponse,
 } from '../types';
 
 // Lister les conversations (utilise X-API-Key pour identifier le projet)
@@ -40,6 +41,18 @@ export const getConversation = async (
   const response = await apiClient.get<ConversationDetailResponse>(
     `/conversations/${conversationId}`,
     { params: { limit } }
+  );
+  return response.data;
+};
+
+// GET /conversations/{id}/messages - Messages seuls
+export const getConversationMessages = async (
+  conversationId: string,
+  params?: { limit?: number; offset?: number }
+): Promise<MessageResponse[]> => {
+  const response = await apiClient.get<MessageResponse[]>(
+    `/conversations/${conversationId}/messages`,
+    { params }
   );
   return response.data;
 };

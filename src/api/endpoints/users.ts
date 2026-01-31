@@ -17,9 +17,8 @@ export const getProfile = async (): Promise<UserProfile> => {
   return response.data;
 };
 
-// PUT /users/me - Mettre à jour le profil
 export const updateProfile = async (data: UpdateProfileRequest): Promise<UserProfile> => {
-  const response = await apiClient.put<UserProfile>('/users/me', data);
+  const response = await apiClient.post<UserProfile>('/users/me/update', data);
   return response.data;
 };
 

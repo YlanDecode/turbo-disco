@@ -8,8 +8,10 @@ import type {
   SatisfactionStats,
   CostEstimate,
   CostEstimateParams,
+  AnalyticsDashboard,
 } from '../types';
 import {
+  getAnalyticsDashboard,
   getAnalyticsOverview,
   getAnalyticsTrends,
   getTopQuestions,
@@ -19,6 +21,21 @@ import {
   exportAnalytics,
 } from '../endpoints/analytics';
 import { getActiveProject } from '../client';
+
+// Dashboard complet (nouvel endpoint consolidé)
+export const useAnalyticsDashboard = (projectId?: string) => {
+  const activeProjectId = projectId || getActiveProject();
+
+  return useQuery<AnalyticsDashboard>({
+    queryKey: ['analytics', activeProjectId, 'dashboard'],
+    queryFn: () => {
+      if (!activeProjectId) throw new Error('Project ID manquant');
+      return getAnalyticsDashboard(activeProjectId);
+    },
+    enabled: !!activeProjectId,
+    refetchInterval: 60000, // Refresh toutes les minutes
+  });
+};
 
 // Vue d'ensemble des analytics
 export const useAnalyticsOverview = (days?: number, projectId?: string) => {

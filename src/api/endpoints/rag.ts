@@ -100,19 +100,45 @@ export const uploadProjectFile = async (
   return response.data;
 };
 
-// DELETE /projects/{project_id}/rag/files/{file_id} - Supprimer un fichier RAG
-export const deleteProjectFile = async (projectId: string, fileId: string): Promise<void> => {
-  await apiClient.delete(`/projects/${projectId}/rag/files/${fileId}`);
+// GET /projects/{project_id}/rag/files/{filename} - Télécharger un fichier RAG
+export const downloadProjectFile = async (projectId: string, filename: string): Promise<void> => {
+  const response = await apiClient.get(`/projects/${projectId}/rag/files/${encodeURIComponent(filename)}`, {
+    responseType: 'blob',
+  });
+
+  // Créer un lien de téléchargement et le déclencher
+  const blob = new Blob([response.data]);
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
 };
 
-// POST /projects/{project_id}/rag/reindex - Réindexer les documents du projet
-export const reindexProject = async (projectId: string): Promise<{
+// DELETE /projects/{project_id}/rag/files/{filename} - Supprimer un fichier RAG
+export const deleteProjectFile = async (projectId: string, filename: string): Promise<void> => {
+  await apiClient.delete(`/projects/${projectId}/rag/files/${encodeURIComponent(filename)}`);
+};
+
+// DELETE /projects/{project_id}/rag/files - Supprimer tous les fichiers RAG
+export const deleteAllProjectFiles = async (projectId: string): Promise<void> => {
+  await apiClient.delete(`/projects/${projectId}/rag/files`);
+};
+
+// POST /projects/{project_id}/rag/rebuild - Reconstruire l'index du projet
+export const rebuildProjectIndex = async (projectId: string): Promise<{
   status: string;
   message: string;
 }> => {
-  const response = await apiClient.post(`/projects/${projectId}/rag/reindex`);
+  const response = await apiClient.post(`/projects/${projectId}/rag/rebuild`);
   return response.data;
 };
+
+// Alias pour compatibilité
+export const reindexProject = rebuildProjectIndex;
 
 // ==================== Legacy Project RAG (backward compatibility) ====================
 

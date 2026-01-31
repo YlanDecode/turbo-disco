@@ -27,3 +27,6 @@ export * from './useWidget';
 
 // Analytics
 export * from './useAnalytics';
+
+// Activities
+export * from './useActivities';

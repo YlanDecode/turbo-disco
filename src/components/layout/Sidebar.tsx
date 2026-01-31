@@ -10,7 +10,6 @@ import {
   Users,
   FileText,
   Key,
-  Webhook,
   BarChart3,
   Bell,
   ChevronLeft,
@@ -43,7 +42,6 @@ const adminNavItems: NavItem[] = [
 
 const settingsNavItems: NavItem[] = [
   { labelKey: 'nav.apiKeys', href: '/settings/api-keys', icon: Key },
-  { labelKey: 'nav.webhooks', href: '/settings/webhooks', icon: Webhook },
   { labelKey: 'nav.analytics', href: '/settings/analytics', icon: BarChart3 },
   { labelKey: 'nav.notifications', href: '/settings/notifications', icon: Bell },
 ];

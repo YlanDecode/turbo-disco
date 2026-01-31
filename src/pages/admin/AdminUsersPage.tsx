@@ -156,78 +156,105 @@ interface ActionMenuProps {
 
 const ActionMenu: React.FC<ActionMenuProps> = ({ onViewDetails, onEdit, onChangeRole, onChangePassword, onDelete }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
+    const handleScroll = () => {
+      if (isOpen) setIsOpen(false);
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, [isOpen]);
 
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.right - 208, // 208 = w-52 (13rem = 208px)
+      });
+    }
+    setIsOpen(!isOpen);
+  };
+
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative">
       <Button
+        ref={buttonRef}
         variant="ghost"
         size="icon"
-        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
+        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity data-[state=open]:opacity-100"
+        data-state={isOpen ? 'open' : 'closed'}
+        onClick={handleToggle}
       >
         <MoreVertical className="h-4 w-4" />
       </Button>
       {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-52 animate-in fade-in-50 slide-in-from-top-2 duration-200">
-          <div className="rounded-lg border bg-card shadow-lg overflow-hidden">
-            <button
-              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors"
-              onClick={() => { onViewDetails(); setIsOpen(false); }}
-            >
-              <Eye className="h-4 w-4 text-muted-foreground" />
-              Voir les details
-            </button>
-            <button
-              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors"
-              onClick={() => { onEdit(); setIsOpen(false); }}
-            >
-              <Pencil className="h-4 w-4 text-muted-foreground" />
-              Modifier
-            </button>
-            <button
-              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors"
-              onClick={() => { onChangeRole(); setIsOpen(false); }}
-            >
-              <Shield className="h-4 w-4 text-muted-foreground" />
-              Modifier le role
-            </button>
-            <button
-              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors"
-              onClick={() => { onChangePassword(); setIsOpen(false); }}
-            >
-              <KeyRound className="h-4 w-4 text-muted-foreground" />
-              Changer le mot de passe
-            </button>
-            <div className="h-px bg-border" />
-            <button
-              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-              onClick={() => { onDelete(); setIsOpen(false); }}
-            >
-              <Trash2 className="h-4 w-4" />
-              Supprimer
-            </button>
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div
+            ref={menuRef}
+            className="fixed z-50 w-52 animate-in fade-in-50 slide-in-from-top-2 duration-200"
+            style={{ top: menuPosition.top, left: Math.max(8, menuPosition.left) }}
+          >
+            <div className="rounded-lg border bg-card shadow-lg overflow-hidden">
+              <button
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors"
+                onClick={() => { onViewDetails(); setIsOpen(false); }}
+              >
+                <Eye className="h-4 w-4 text-muted-foreground" />
+                Voir les details
+              </button>
+              <button
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors"
+                onClick={() => { onEdit(); setIsOpen(false); }}
+              >
+                <Pencil className="h-4 w-4 text-muted-foreground" />
+                Modifier
+              </button>
+              <button
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors"
+                onClick={() => { onChangeRole(); setIsOpen(false); }}
+              >
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                Modifier le role
+              </button>
+              <button
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors"
+                onClick={() => { onChangePassword(); setIsOpen(false); }}
+              >
+                <KeyRound className="h-4 w-4 text-muted-foreground" />
+                Changer le mot de passe
+              </button>
+              <div className="h-px bg-border" />
+              <button
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                onClick={() => { onDelete(); setIsOpen(false); }}
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
@@ -241,23 +268,33 @@ interface UserCardProps {
   onChangeRole: () => void;
   onChangePassword: () => void;
   onDelete: () => void;
+  onApprove?: () => void;
+  isApproving?: boolean;
   index: number;
 }
 
-const UserCard: React.FC<UserCardProps> = ({ user, onViewDetails, onEdit, onChangeRole, onChangePassword, onDelete, index }) => {
+const UserCard: React.FC<UserCardProps> = ({ user, onViewDetails, onEdit, onChangeRole, onChangePassword, onDelete, onApprove, isApproving, index }) => {
   const roleInfo = roleConfig[user.role] || roleConfig.user;
   const RoleIcon = roleInfo.icon;
+  const isPending = user.is_approved === false;
 
   return (
     <div
-      className="group relative flex items-center justify-between rounded-xl border bg-card p-4 transition-all duration-300 hover:shadow-md hover:border-primary/20 cursor-pointer"
+      className={cn(
+        "group relative flex items-center justify-between rounded-xl border bg-card p-4 transition-all duration-300 hover:shadow-md cursor-pointer",
+        isPending ? "border-orange-500/30 hover:border-orange-500/50" : "hover:border-primary/20"
+      )}
       style={{ animationDelay: `${index * 50}ms` }}
       onClick={onViewDetails}
     >
       <div className="flex items-center gap-4">
         <div className="relative">
           <UserAvatar user={user} size="md" />
-          {!user.is_active && (
+          {isPending ? (
+            <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-orange-500 flex items-center justify-center">
+              <Clock className="h-2.5 w-2.5 text-white" />
+            </div>
+          ) : !user.is_active && (
             <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-gray-400 flex items-center justify-center">
               <Power className="h-2.5 w-2.5 text-white" />
             </div>
@@ -269,22 +306,45 @@ const UserCard: React.FC<UserCardProps> = ({ user, onViewDetails, onEdit, onChan
             {user.email_verified && (
               <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
             )}
+            {isPending && (
+              <Badge variant="outline" className="text-orange-600 border-orange-500/50 text-xs">
+                En attente
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground truncate">{user.email}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
+        {isPending && onApprove && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-green-500/50 text-green-600 hover:bg-green-500/10 hover:text-green-600 hover:border-green-500"
+            onClick={(e) => { e.stopPropagation(); onApprove(); }}
+            disabled={isApproving}
+          >
+            {isApproving ? (
+              <RefreshCw className="h-4 w-4 mr-1.5 animate-spin" />
+            ) : (
+              <UserCheck className="h-4 w-4 mr-1.5" />
+            )}
+            Approuver
+          </Button>
+        )}
         <Badge variant={roleInfo.variant} className="hidden sm:flex items-center gap-1.5">
           <RoleIcon className="h-3 w-3" />
           {roleInfo.label}
         </Badge>
-        <Badge
-          variant={user.is_active ? 'success' : 'secondary'}
-          className="hidden md:flex"
-        >
-          {user.is_active ? 'Actif' : 'Inactif'}
-        </Badge>
+        {!isPending && (
+          <Badge
+            variant={user.is_active ? 'success' : 'secondary'}
+            className="hidden md:flex"
+          >
+            {user.is_active ? 'Actif' : 'Inactif'}
+          </Badge>
+        )}
         <span className="hidden lg:block text-xs text-muted-foreground whitespace-nowrap">
           {user.last_login
             ? formatDistanceToNow(new Date(user.last_login), { addSuffix: true, locale: fr })
@@ -521,15 +581,16 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, isOpen, onClose, on
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [prevUserId, setPrevUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      setEmail(user.email || '');
-      setDisplayName(user.display_name || '');
-      setAvatarUrl(user.avatar_url || '');
-      setIsActive(user.is_active ?? true);
-    }
-  }, [user]);
+  // Sync state with props during render (React recommended pattern)
+  if (user && user.id !== prevUserId) {
+    setPrevUserId(user.id);
+    setEmail(user.email || '');
+    setDisplayName(user.display_name || '');
+    setAvatarUrl(user.avatar_url || '');
+    setIsActive(user.is_active ?? true);
+  }
 
   if (!user) return null;
 
@@ -889,12 +950,13 @@ interface RoleModalProps {
 
 const RoleModal: React.FC<RoleModalProps> = ({ user, isOpen, onClose, onSave, isLoading }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole>('user');
+  const [prevUserId, setPrevUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      setSelectedRole(user.role);
-    }
-  }, [user]);
+  // Sync state with props during render (React recommended pattern)
+  if (user && user.id !== prevUserId) {
+    setPrevUserId(user.id);
+    setSelectedRole(user.role);
+  }
 
   if (!user) return null;
 
@@ -1035,9 +1097,39 @@ export const AdminUsersPage: React.FC = () => {
   const changePassword = useChangeUserPassword();
   const deleteUser = useDeleteUser();
 
-  // Computed values
-  const users = usersData?.users || [];
-  const pending = pendingUsers || [];
+  const users = useMemo(() => {
+    const data = usersData?.users;
+    return Array.isArray(data) ? data : [];
+  }, [usersData?.users]);
+
+  const pendingFromApi = useMemo(() => {
+    return Array.isArray(pendingUsers) ? pendingUsers : [];
+  }, [pendingUsers]);
+
+  const pendingFromUsers = useMemo(() =>
+    users.filter(u => u.is_approved === false).map(u => ({
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      display_name: u.display_name,
+      created_at: u.created_at,
+      requested_at: u.created_at,
+    } as PendingUser)),
+    [users]
+  );
+
+  const pending = useMemo(() => {
+    const allPending = [...pendingFromApi];
+    const existingIds = new Set(allPending.map(p => p.id));
+
+    pendingFromUsers.forEach(user => {
+      if (!existingIds.has(user.id)) {
+        allPending.push(user);
+      }
+    });
+
+    return allPending;
+  }, [pendingFromApi, pendingFromUsers]);
 
   const stats = useMemo(() => ({
     total: users.length,
@@ -1243,6 +1335,8 @@ export const AdminUsersPage: React.FC = () => {
                   onChangeRole={() => openRoleModal(user)}
                   onChangePassword={() => openPasswordModal(user)}
                   onDelete={() => openDeleteDialog(user)}
+                  onApprove={user.is_approved === false ? () => handleApprove(user.id) : undefined}
+                  isApproving={approveUser.isPending}
                 />
               ))}
             </div>

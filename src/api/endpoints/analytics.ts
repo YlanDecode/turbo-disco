@@ -8,84 +8,123 @@ import type {
   SatisfactionStats,
   CostEstimate,
   CostEstimateParams,
+  AnalyticsDashboard,
 } from '../types';
 
-// GET /projects/{project_id}/analytics/overview - Vue d'ensemble
+// GET /api/v1/analytics/overview - Vue d'ensemble globale
+export const getGlobalAnalyticsOverview = async (): Promise<AnalyticsOverview> => {
+  const response = await apiClient.get<AnalyticsOverview>('/analytics/overview');
+  return response.data;
+};
+
+// GET /api/v1/analytics/projects/{project_id} - Analytics d'un projet
+export const getProjectAnalytics = async (projectId: string): Promise<AnalyticsOverview> => {
+  const response = await apiClient.get<AnalyticsOverview>(
+    `/analytics/projects/${projectId}`
+  );
+  return response.data;
+};
+
+// GET /api/v1/analytics/projects/{project_id}/dashboard - Dashboard complet
+export const getAnalyticsDashboard = async (projectId: string): Promise<AnalyticsDashboard> => {
+  const response = await apiClient.get<AnalyticsDashboard>(
+    `/analytics/projects/${projectId}/dashboard`
+  );
+  return response.data;
+};
+
+// GET /api/v1/analytics/projects/{project_id}/trends - Tendances (alias pour compatibilité)
 export const getAnalyticsOverview = async (
   projectId: string,
   days?: number
 ): Promise<AnalyticsOverview> => {
   const response = await apiClient.get<AnalyticsOverview>(
-    `/projects/${projectId}/analytics/overview`,
+    `/analytics/projects/${projectId}`,
     { params: { days } }
   );
   return response.data;
 };
 
-// GET /projects/{project_id}/analytics/trends - Tendances
+// GET /api/v1/analytics/projects/{project_id}/trends - Tendances
 export const getAnalyticsTrends = async (
   projectId: string,
   params?: AnalyticsTrendParams
 ): Promise<AnalyticsTrend[]> => {
-  const response = await apiClient.get<AnalyticsTrend[]>(
-    `/projects/${projectId}/analytics/trends`,
+  const response = await apiClient.get<{ trends: AnalyticsTrend[] } | AnalyticsTrend[]>(
+    `/analytics/projects/${projectId}/trends`,
     { params }
   );
-  return response.data;
+  // Handle both { trends: [...] } and [...] response formats
+  const data = response.data;
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return data?.trends || [];
 };
 
-// GET /projects/{project_id}/analytics/top-questions - Questions fréquentes
+// GET /api/v1/analytics/projects/{project_id}/top-questions - Questions fréquentes
 export const getTopQuestions = async (
   projectId: string,
   params?: { days?: number; limit?: number }
 ): Promise<TopQuestion[]> => {
-  const response = await apiClient.get<TopQuestion[]>(
-    `/projects/${projectId}/analytics/top-questions`,
+  const response = await apiClient.get<{ questions: TopQuestion[] } | TopQuestion[]>(
+    `/analytics/projects/${projectId}/top-questions`,
     { params }
   );
-  return response.data;
+  // Handle both { questions: [...] } and [...] response formats
+  const data = response.data;
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return (data as { questions?: TopQuestion[] })?.questions || [];
 };
 
-// GET /projects/{project_id}/analytics/failed-queries - Requêtes échouées
+// GET /api/v1/analytics/projects/{project_id}/failed-queries - Requêtes échouées (non dans la liste fournie)
 export const getFailedQueries = async (
   projectId: string,
   params?: { days?: number; limit?: number }
 ): Promise<FailedQuery[]> => {
   const response = await apiClient.get<FailedQuery[]>(
-    `/projects/${projectId}/analytics/failed-queries`,
+    `/analytics/projects/${projectId}/failed-queries`,
     { params }
   );
   return response.data;
 };
 
-// GET /projects/{project_id}/analytics/satisfaction - Statistiques de satisfaction
+// GET /api/v1/analytics/projects/{project_id}/satisfaction - Statistiques de satisfaction
 export const getSatisfactionStats = async (projectId: string): Promise<SatisfactionStats> => {
   const response = await apiClient.get<SatisfactionStats>(
-    `/projects/${projectId}/analytics/satisfaction`
+    `/analytics/projects/${projectId}/satisfaction`
   );
   return response.data;
 };
 
-// GET /projects/{project_id}/analytics/costs - Estimation des coûts
+// GET /api/v1/analytics/projects/{project_id}/costs - Estimation des coûts
 export const getCostEstimate = async (
   projectId: string,
   params: CostEstimateParams
 ): Promise<CostEstimate> => {
   const response = await apiClient.get<CostEstimate>(
-    `/projects/${projectId}/analytics/costs`,
+    `/analytics/projects/${projectId}/costs`,
     { params }
   );
   return response.data;
 };
 
-// GET /projects/{project_id}/analytics/export - Export des données
+// GET /api/v1/analytics/projects/{project_id}/export - Export des données
 export const exportAnalytics = async (
   projectId: string,
   params: { start_date: string; end_date: string; format?: 'json' | 'csv' }
 ): Promise<Blob> => {
-  const response = await apiClient.get(`/projects/${projectId}/analytics/export`, {
+  const response = await apiClient.get(`/analytics/projects/${projectId}/export`, {
     params,
     responseType: 'blob',
   });
+  return response.data;
+};
+
+// POST /api/v1/analytics/refresh - Rafraîchir les analytics
+export const refreshAnalytics = async (): Promise<{ status: string; message: string }> => {
+  const response = await apiClient.post('/analytics/refresh');
   return response.data;
 };
