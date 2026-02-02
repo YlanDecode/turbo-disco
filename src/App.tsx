@@ -22,6 +22,7 @@ import { ApiKeysPage } from './pages/settings/ApiKeysPage';
 import { AnalyticsPage } from './pages/settings/AnalyticsPage';
 import { NotificationsPage } from './pages/settings/NotificationsPage';
 import { Toaster, toast } from 'sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import './index.css';
 
 // Composant pour gérer les notifications d'erreur globales
@@ -55,6 +56,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ProjectProvider>
+          <TooltipProvider>
           <BrowserRouter>
             <Routes>
               {/* Routes publiques */}
@@ -166,6 +168,7 @@ function App() {
             <Toaster position="top-right" richColors />
             <GlobalErrorHandler />
           </BrowserRouter>
+          </TooltipProvider>
         </ProjectProvider>
       </AuthProvider>
     </QueryClientProvider>

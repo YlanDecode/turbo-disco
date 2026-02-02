@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,10 +10,26 @@ import {
   ArrowDownRight,
   Loader2,
   AlertCircle,
+  Bell,
+  UserPlus,
+  UserCheck,
+  UserX,
+  LogIn,
+  FolderPlus,
+  FolderCog,
+  Trash2,
+  FileUp,
+  FileX,
+  MessageSquareOff,
+  Key,
+  RefreshCw,
+  AlertTriangle,
+  Database,
+  XCircle,
+  Check,
 } from 'lucide-react';
 import { StatCard } from '@/components/ui/stat-card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/authStore';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useProjects } from '@/api/hooks/useProjects';
@@ -22,6 +38,34 @@ import {
   useAnalyticsTrends,
   useTopQuestions,
 } from '@/api/hooks/useAnalytics';
+import { useActivities, useMarkActivityRead } from '@/api/hooks/useActivities';
+import type { ActivityType } from '@/api/types';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+
+// Activity type configuration for icons
+const activityConfig: Record<ActivityType, { icon: React.ElementType; color: string; bgColor: string }> = {
+  user_signup: { icon: UserPlus, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+  user_approved: { icon: UserCheck, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+  user_rejected: { icon: UserX, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+  user_login: { icon: LogIn, color: 'text-slate-500', bgColor: 'bg-slate-500/10' },
+  project_created: { icon: FolderPlus, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
+  project_updated: { icon: FolderCog, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
+  project_deleted: { icon: Trash2, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+  file_uploaded: { icon: FileUp, color: 'text-cyan-500', bgColor: 'bg-cyan-500/10' },
+  file_deleted: { icon: FileX, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+  conversation_started: { icon: MessageSquare, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
+  conversation_ended: { icon: MessageSquareOff, color: 'text-slate-500', bgColor: 'bg-slate-500/10' },
+  webhook_created: { icon: Bell, color: 'text-teal-500', bgColor: 'bg-teal-500/10' },
+  webhook_triggered: { icon: Bell, color: 'text-teal-500', bgColor: 'bg-teal-500/10' },
+  api_key_created: { icon: Key, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
+  api_key_rotated: { icon: RefreshCw, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },
+  system_alert: { icon: AlertTriangle, color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' },
+  rag_indexed: { icon: Database, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+  rag_failed: { icon: XCircle, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+};
+
 import {
   LineChart,
   Line,
@@ -46,6 +90,22 @@ export const DashboardPage: React.FC = () => {
   const { data: overview, isLoading: overviewLoading } = useAnalyticsOverview(30, projectId || undefined);
   const { data: trends, isLoading: trendsLoading } = useAnalyticsTrends({ days: 7, granularity: 'day' }, projectId || undefined);
   const { data: topQuestions, isLoading: questionsLoading } = useTopQuestions({ days: 7, limit: 5 }, projectId || undefined);
+
+  // Fetch recent activities
+  const { data: activitiesData, isLoading: activitiesLoading } = useActivities({ limit: 4 });
+  const markRead = useMarkActivityRead();
+  const [markingId, setMarkingId] = useState<string | null>(null);
+
+  const recentActivities = activitiesData?.activities || [];
+
+  const handleMarkRead = async (activityId: string) => {
+    setMarkingId(activityId);
+    try {
+      await markRead.mutateAsync({ activityId, data: { read: true } });
+    } finally {
+      setMarkingId(null);
+    }
+  };
 
   // Transform trends data for chart
   const conversationData = trends?.map((trend) => ({
@@ -78,14 +138,6 @@ export const DashboardPage: React.FC = () => {
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
   };
-
-  // Recent activity (still mock as there's no specific endpoint for this)
-  const recentActivity = [
-    { id: 1, type: 'conversation', messageKey: 'activity.newConversation', time: t('activity.timeAgo.minutesAgo', { count: 5 }), project: 'E-commerce Bot' },
-    { id: 2, type: 'user', messageKey: 'activity.newUser', time: t('activity.timeAgo.minutesAgo', { count: 15 }), project: 'Support Bot' },
-    { id: 3, type: 'project', messageKey: 'activity.projectUpdated', time: t('activity.timeAgo.hoursAgo', { count: 1 }), project: 'FAQ Assistant' },
-    { id: 4, type: 'conversation', messageKey: 'activity.positiveFeedback', time: t('activity.timeAgo.hoursAgo', { count: 2 }), project: 'E-commerce Bot' },
-  ];
 
   const hasProject = !!projectId;
 
@@ -262,31 +314,71 @@ export const DashboardPage: React.FC = () => {
         <div className="rounded-lg border bg-card p-6 lg:col-span-2" role="region" aria-label={t('dashboard.recentActivity')}>
           <div className="mb-4 flex items-center justify-between">
             <h3 className="font-semibold">{t('dashboard.recentActivity')}</h3>
-            <Badge variant="secondary" className="text-xs">
-              En développement
-            </Badge>
           </div>
           <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-start gap-4 border-b pb-4 last:border-b-0 last:pb-0"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-                  {activity.type === 'conversation' && <MessageSquare className="h-5 w-5 text-primary" aria-hidden="true" />}
-                  {activity.type === 'user' && <Users className="h-5 w-5 text-green-600" aria-hidden="true" />}
-                  {activity.type === 'project' && <FolderKanban className="h-5 w-5 text-blue-600" aria-hidden="true" />}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{t(activity.messageKey)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {activity.project} • {activity.time}
-                  </p>
-                </div>
+            {activitiesLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            ))}
+            ) : recentActivities.length > 0 ? (
+              recentActivities.map((activity) => {
+                const config = activityConfig[activity.type] || { icon: Bell, color: 'text-muted-foreground', bgColor: 'bg-muted' };
+                const Icon = config.icon;
+                return (
+                  <div
+                    key={activity.id}
+                    className={cn(
+                      "flex items-start gap-4 border-b pb-4 last:border-b-0 last:pb-0",
+                      !activity.read && "bg-primary/5 -mx-2 px-2 py-2 rounded-lg"
+                    )}
+                  >
+                    <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full", config.bgColor)}>
+                      <Icon className={cn("h-5 w-5", config.color)} aria-hidden="true" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className={cn("text-sm font-medium", !activity.read && "text-foreground")}>
+                            {activity.title}
+                          </p>
+                          {activity.message && (
+                            <p className="text-sm text-muted-foreground truncate mt-0.5">
+                              {activity.message}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true, locale: fr })}
+                          </p>
+                        </div>
+                        {!activity.read && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 shrink-0"
+                            onClick={() => handleMarkRead(activity.id)}
+                            disabled={markingId === activity.id}
+                            title="Marquer comme lu"
+                          >
+                            {markingId === activity.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Check className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <Bell className="h-8 w-8 mb-2" />
+                <p className="text-sm">Aucune activité récente</p>
+              </div>
+            )}
           </div>
-          <Button variant="ghost" className="mt-4 w-full">
+          <Button variant="ghost" className="mt-4 w-full" onClick={() => navigate('/settings/notifications')}>
             {t('dashboard.viewAllActivity')}
           </Button>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useActivities, useUnreadCount, useMarkActivityRead, useMarkAllActivitiesRead } from '@/api/hooks/useActivities';
 import {
   Bell,
   Search,
@@ -24,38 +25,65 @@ import {
   MessageSquare,
   AlertTriangle,
   CheckCheck,
+  Key,
+  Webhook,
+  Trash2,
+  FileX,
+  Database,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
-import type { NotificationType, WebSocketNotification } from '@/api/types';
+import type { ActivityType, Activity } from '@/api/types';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
   showMenuButton?: boolean;
 }
 
-// Icônes par type de notification
-const notificationIcons: Record<NotificationType, React.ComponentType<{ className?: string }>> = {
+// Icônes par type d'activité
+const activityIcons: Record<ActivityType, React.ComponentType<{ className?: string }>> = {
   user_signup: UserPlus,
   user_approved: UserCheck,
   user_rejected: UserX,
+  user_login: User,
   project_created: FolderPlus,
+  project_updated: FolderPlus,
+  project_deleted: Trash2,
   file_uploaded: FileUp,
+  file_deleted: FileX,
   conversation_started: MessageSquare,
+  conversation_ended: MessageSquare,
+  webhook_created: Webhook,
+  webhook_triggered: Webhook,
+  api_key_created: Key,
+  api_key_rotated: Key,
   system_alert: AlertTriangle,
+  rag_indexed: Database,
+  rag_failed: AlertTriangle,
 };
 
-// Couleurs par type de notification
-const notificationColors: Record<NotificationType, string> = {
+// Couleurs par type d'activité
+const activityColors: Record<ActivityType, string> = {
   user_signup: 'text-blue-500',
   user_approved: 'text-green-500',
   user_rejected: 'text-red-500',
+  user_login: 'text-slate-500',
   project_created: 'text-purple-500',
+  project_updated: 'text-purple-400',
+  project_deleted: 'text-red-500',
   file_uploaded: 'text-orange-500',
+  file_deleted: 'text-red-400',
   conversation_started: 'text-cyan-500',
+  conversation_ended: 'text-cyan-400',
+  webhook_created: 'text-indigo-500',
+  webhook_triggered: 'text-indigo-400',
+  api_key_created: 'text-amber-500',
+  api_key_rotated: 'text-amber-400',
   system_alert: 'text-yellow-500',
+  rag_indexed: 'text-green-500',
+  rag_failed: 'text-red-500',
 };
 
 // Formater le temps relatif
@@ -86,14 +114,26 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = f
     document.documentElement.classList.contains('dark')
   );
 
-  // Utiliser le hook de notifications WebSocket
-  const {
-    notifications,
-    unreadCount,
-    isConnected,
-    markAsRead,
-    markAllAsRead,
-  } = useNotifications();
+  // Charger les activités depuis l'API
+  const { data: activitiesData } = useActivities({ limit: 10 });
+  const { data: unreadData } = useUnreadCount();
+  const markActivityReadMutation = useMarkActivityRead();
+  const markAllReadMutation = useMarkAllActivitiesRead();
+
+  // WebSocket pour les nouvelles notifications en temps réel
+  const { isConnected } = useNotifications();
+
+  // Liste des activités à afficher
+  const activities = useMemo(() => activitiesData?.activities || [], [activitiesData]);
+  const unreadCount = unreadData?.count || 0;
+
+  const handleMarkAsRead = (activityId: string) => {
+    markActivityReadMutation.mutate({ activityId, data: { read: true } });
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllReadMutation.mutate();
+  };
 
   const handleLogout = async () => {
     try {
@@ -118,9 +158,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = f
     }
   };
 
-  const handleNotificationClick = (notification: WebSocketNotification) => {
-    if (!notification.read) {
-      markAsRead(notification.id);
+  const handleActivityClick = (activity: Activity) => {
+    if (!activity.read) {
+      handleMarkAsRead(activity.id);
     }
     setShowNotifications(false);
   };
@@ -191,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = f
                         variant="ghost"
                         size="sm"
                         className="h-7 text-xs"
-                        onClick={markAllAsRead}
+                        onClick={handleMarkAllAsRead}
                       >
                         <CheckCheck className="h-3 w-3 mr-1" />
                         {t('notifications.markAllRead', 'Tout lire')}
@@ -201,29 +241,29 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = f
                   </div>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {notifications.length > 0 ? (
-                    notifications.slice(0, 10).map((notif) => {
-                      const Icon = notificationIcons[notif.type] || Bell;
-                      const iconColor = notificationColors[notif.type] || 'text-muted-foreground';
+                  {activities.length > 0 ? (
+                    activities.slice(0, 10).map((activity) => {
+                      const Icon = activityIcons[activity.type] || Bell;
+                      const iconColor = activityColors[activity.type] || 'text-muted-foreground';
 
                       return (
                         <div
-                          key={notif.id}
-                          onClick={() => handleNotificationClick(notif)}
+                          key={activity.id}
+                          onClick={() => handleActivityClick(activity)}
                           className={cn(
                             'flex items-start gap-3 border-b p-4 last:border-b-0 cursor-pointer hover:bg-muted/50 transition-colors',
-                            !notif.read && 'bg-muted/30'
+                            !activity.read && 'bg-muted/30'
                           )}
                         >
                           <div className={cn('mt-0.5 shrink-0', iconColor)}>
                             <Icon className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={cn('text-sm', !notif.read && 'font-medium')}>{notif.title}</p>
-                            <p className="text-xs text-muted-foreground truncate">{notif.message}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{formatTimeAgo(notif.created_at)}</p>
+                            <p className={cn('text-sm', !activity.read && 'font-medium')}>{activity.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">{activity.message}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{formatTimeAgo(activity.created_at)}</p>
                           </div>
-                          {!notif.read && (
+                          {!activity.read && (
                             <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
                           )}
                         </div>
@@ -236,9 +276,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton = f
                     </div>
                   )}
                 </div>
-                {notifications.length > 10 && (
+                {activities.length > 10 && (
                   <div className="border-t p-2">
-                    <Button variant="ghost" className="w-full" size="sm">
+                    <Button variant="ghost" className="w-full" size="sm" onClick={() => { setShowNotifications(false); navigate('/settings/notifications'); }}>
                       {t('notifications.viewAll', 'Voir toutes les notifications')}
                     </Button>
                   </div>

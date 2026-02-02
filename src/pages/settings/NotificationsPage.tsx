@@ -127,7 +127,7 @@ export const NotificationsPage: React.FC = () => {
   const [markingId, setMarkingId] = useState<string | null>(null);
 
   // Queries
-  const { data: activitiesData, isLoading, refetch } = useActivities({
+  const { data: activitiesData, isLoading } = useActivities({
     read: activeTab === 'unread' ? false : undefined,
     limit: 50,
   });
@@ -151,7 +151,6 @@ export const NotificationsPage: React.FC = () => {
 
   const handleMarkAllRead = async () => {
     await markAllRead.mutateAsync();
-    refetch();
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Sidebar } from './Sidebar';
@@ -45,6 +45,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     }
   }, [isLoading, requireAdmin, isAdmin, navigate]);
 
+  // Handlers
+  const handleSidebarToggle = useCallback(() => {
+    setSidebarCollapsed(prev => !prev);
+  }, []);
+
+  const handleMobileMenuToggle = useCallback(() => {
+    setMobileSidebarOpen(prev => !prev);
+  }, []);
+
+  const handleMobileSidebarClose = useCallback(() => {
+    setMobileSidebarOpen(false);
+  }, []);
+
   if (isLoading) {
     return <LoadingSpinner fullScreen text="Chargement..." />;
   }
@@ -61,37 +74,31 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     <div className="min-h-screen bg-background">
       {/* Sidebar - Desktop */}
       <div className="hidden lg:block">
-        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
-      </div>
-
-      {/* Mobile sidebar overlay */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={handleSidebarToggle}
         />
-      )}
-
-      {/* Sidebar - Mobile */}
-      <div
-        className={cn(
-          'fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 lg:hidden',
-          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        <Sidebar collapsed={false} onToggle={() => setMobileSidebarOpen(false)} />
       </div>
+
+      {/* Sidebar - Mobile (Sheet) */}
+      <Sidebar
+        collapsed={false}
+        onToggle={handleSidebarToggle}
+        isMobile={true}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={handleMobileSidebarClose}
+      />
 
       {/* Main content */}
       <div
         className={cn(
-          'flex min-h-screen flex-col transition-all duration-300',
-          sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
+          'flex min-h-screen flex-col transition-all duration-300 ease-in-out',
+          sidebarCollapsed ? 'lg:ml-[68px]' : 'lg:ml-64'
         )}
       >
         <Header
           showMenuButton
-          onMenuToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          onMenuToggle={handleMobileMenuToggle}
         />
 
         <main className="flex-1 p-4 lg:p-6">
