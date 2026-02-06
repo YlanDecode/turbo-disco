@@ -1,39 +1,19 @@
 import axios, { AxiosError } from 'axios';
-import CryptoJS from 'crypto-js';
 import { getErrorMessage, showErrorToast } from '@/lib/errors';
+import { useAuthStore } from '@/store/authStore';
 
 // Ensure HTTPS is always used for the API URL
 const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://chatbot-api.lantorian.com/api/v1';
-const API_BASE_URL = rawApiUrl.replace(/^http:\/\//i, 'https://');
-const IS_NGROK = /ngrok/i.test(String(API_BASE_URL));
+export const API_BASE_URL = rawApiUrl.replace(/^http:\/\//i, 'https://');
+export const IS_NGROK = /ngrok/i.test(String(API_BASE_URL));
 
-const ENCRYPTION_KEY = 'madabest-secure-key-2024';
-
-// Utilitaires de chiffrement
-export const encryptData = (data: string): string => {
-  return CryptoJS.AES.encrypt(data, ENCRYPTION_KEY).toString();
-};
-
-export const decryptData = (encryptedData: string): string => {
-  const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
-  return bytes.toString(CryptoJS.enc.Utf8);
-};
-
-// Gestion sécurisée de la clé API
+// Gestion de la clé API projet (plain localStorage)
 export const setApiKey = (apiKey: string): void => {
-  const encrypted = encryptData(apiKey);
-  localStorage.setItem('madabest_api_key', encrypted);
+  localStorage.setItem('madabest_api_key', apiKey);
 };
 
 export const getApiKey = (): string | null => {
-  const encrypted = localStorage.getItem('madabest_api_key');
-  if (!encrypted) return null;
-  try {
-    return decryptData(encrypted);
-  } catch (error) {
-    console.error('Failed to decrypt API key:', error);
-    return null;
-  }
+  return localStorage.getItem('madabest_api_key');
 };
 
 export const clearApiKey = (): void => {
@@ -53,25 +33,13 @@ export const clearActiveProject = (): void => {
   localStorage.removeItem('madabest_active_project');
 };
 
-// Gestion du token JWT d'authentification utilisateur
+// Lecture des tokens JWT depuis le store Zustand
 export const getAccessToken = (): string | null => {
-  const encrypted = localStorage.getItem('madabest_access_token');
-  if (!encrypted) return null;
-  try {
-    return decryptData(encrypted);
-  } catch {
-    return null;
-  }
+  return useAuthStore.getState().accessToken;
 };
 
 export const getRefreshToken = (): string | null => {
-  const encrypted = localStorage.getItem('madabest_refresh_token');
-  if (!encrypted) return null;
-  try {
-    return decryptData(encrypted);
-  } catch {
-    return null;
-  }
+  return useAuthStore.getState().refreshToken;
 };
 
 // Client Axios configuré
@@ -82,13 +50,6 @@ export const apiClient = axios.create({
   },
   timeout: 30000, // 30 secondes
 });
-
-// Forcer l'entête ngrok pour éviter l'avertissement navigateur
-if (IS_NGROK) {
-  try {
-    (apiClient.defaults.headers as any).common['ngrok-skip-browser-warning'] = 'anyvalue';
-  } catch {}
-}
 
 // Intercepteur de requête pour injecter X-API-Key et/ou Bearer token
 apiClient.interceptors.request.use(
@@ -105,12 +66,11 @@ apiClient.interceptors.request.use(
       config.headers['X-API-Key'] = apiKey;
     }
 
-    // Injecter l'entête ngrok à chaque requête si applicable
-    try {
-      (config.headers as Record<string, unknown>)['ngrok-skip-browser-warning'] = 'anyvalue';
-    } catch {
-      // Ignorer les erreurs
+    // Injecter l'entête ngrok si applicable
+    if (IS_NGROK) {
+      config.headers['ngrok-skip-browser-warning'] = 'anyvalue';
     }
+
     return config;
   },
   (error) => {
@@ -213,9 +173,10 @@ export const publicClient = axios.create({
 });
 
 if (IS_NGROK) {
-  try {
-    (publicClient.defaults.headers as any).common['ngrok-skip-browser-warning'] = 'anyvalue';
-  } catch {}
+  publicClient.interceptors.request.use((config) => {
+    config.headers['ngrok-skip-browser-warning'] = 'anyvalue';
+    return config;
+  });
 }
 
 export default apiClient;

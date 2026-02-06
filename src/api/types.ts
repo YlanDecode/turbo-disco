@@ -165,7 +165,7 @@ export interface CreateConversationBody {
   session_id?: string | null;
 }
 
-export interface Error {
+export interface ApiError {
   detail: string;
 }
 
@@ -646,20 +646,6 @@ export interface CostEstimateParams {
   start_date: string;
   end_date: string;
   cost_per_1k_tokens?: number;
-}
-
-// ==================== Chat (updated) ====================
-
-export interface ChatSource {
-  content: string;
-  score: number;
-}
-
-export interface ChatResponseUpdated {
-  response: string;
-  conversation_id: string;
-  message_id: string;
-  sources?: ChatSource[];
 }
 
 // ==================== RAG (updated) ====================

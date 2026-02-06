@@ -20,6 +20,12 @@ interface AuthState {
   hasRole: (role: string) => boolean;
 }
 
+function clearLegacyStorage() {
+  localStorage.removeItem('madabest_access_token');
+  localStorage.removeItem('madabest_refresh_token');
+  localStorage.removeItem('madabest_user');
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -79,6 +85,11 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         user: state.user,
       }),
+      onRehydrateStorage: () => {
+        return () => {
+          clearLegacyStorage();
+        };
+      },
     }
   )
 );
