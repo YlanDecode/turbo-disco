@@ -30,9 +30,22 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSend, disabled, is
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      handleSubmit(e);
+    if (e.key === 'Enter') {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const textarea = textareaRef.current;
+        if (textarea) {
+          const { selectionStart, selectionEnd } = textarea;
+          const newValue = message.slice(0, selectionStart) + '\n' + message.slice(selectionEnd);
+          setMessage(newValue);
+          requestAnimationFrame(() => {
+            textarea.selectionStart = textarea.selectionEnd = selectionStart + 1;
+          });
+        }
+      } else if (!e.shiftKey) {
+        e.preventDefault();
+        handleSubmit(e);
+      }
     }
   };
 
@@ -46,7 +59,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSend, disabled, is
     <form onSubmit={handleSubmit} className="relative">
       <Textarea
         ref={textareaRef}
-        placeholder="Posez votre question... (Ctrl+Enter pour envoyer)"
+        placeholder="Posez votre question... (Ctrl+Entrée pour nouvelle ligne)"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}

@@ -1,9 +1,5 @@
-import { apiClient } from '../client';
+import { apiClient, API_BASE_URL, IS_NGROK } from '../client';
 import type { ChatRequest, ChatResponse } from '../types';
-
-// Ensure HTTPS is always used
-const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://chatbot-api.lantorian.com/api/v1';
-const API_BASE_URL = rawApiUrl.replace(/^http:\/\//i, 'https://');
 
 // Chat avec réponse complète (utilise X-API-Key pour identifier le projet)
 export const sendChatMessage = async (
@@ -39,7 +35,7 @@ export const sendChatMessageStream = async (
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': apiKey,
-        'ngrok-skip-browser-warning': 'anyvalue',
+        ...(IS_NGROK && { 'ngrok-skip-browser-warning': 'anyvalue' }),
       },
       body: JSON.stringify(data),
       signal: abortController?.signal,

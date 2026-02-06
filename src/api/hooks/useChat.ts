@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { ChatRequest } from '../types';
 import { sendChatMessage, sendChatMessageStream, type SSECallbacks } from '../endpoints/chat';
 import { getApiKey } from '../client';
@@ -18,7 +18,7 @@ export const useSendMessage = () => {
 export const useChatStream = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
 
   const sendMessage = useCallback(
@@ -37,7 +37,7 @@ export const useChatStream = () => {
       setError(null);
 
       const controller = new AbortController();
-      setAbortController(controller);
+      abortControllerRef.current = controller;
 
       const apiKey = getApiKey();
       if (!apiKey) {
@@ -52,13 +52,13 @@ export const useChatStream = () => {
         onMeta: (meta) => options.onMeta?.(meta),
         onComplete: () => {
           setIsStreaming(false);
-          setAbortController(null);
+          abortControllerRef.current = null;
           options.onComplete?.();
         },
         onError: (err) => {
           setError(err);
           setIsStreaming(false);
-          setAbortController(null);
+          abortControllerRef.current = null;
         },
         onConversationId: (id) => {
           setConversationId(id);
@@ -78,12 +78,12 @@ export const useChatStream = () => {
   );
 
   const cancel = useCallback(() => {
-    if (abortController) {
-      abortController.abort();
-      setAbortController(null);
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
     setIsStreaming(false);
-  }, [abortController]);
+  }, []);
 
   return {
     sendMessage,
