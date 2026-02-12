@@ -39,16 +39,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => window.removeEventListener('auth-error', handleAuthError);
   }, [clearAuth]);
 
-  // Au montage, valider la session si on a des tokens mais pas de user
+  // Au montage, valider la session en vérifiant le token auprès du serveur
   useEffect(() => {
     const validateSession = async () => {
-      if (accessToken && !user) {
-        try {
-          const profile = await getProfile();
-          setUser(profile);
-        } catch {
-          clearAuth();
-        }
+      if (!accessToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const profile = await getProfile();
+        setUser(profile);
+      } catch {
+        // Le refresh automatique est géré par l'intercepteur axios.
+        // Si on arrive ici, le refresh a aussi échoué → clearAuth déjà appelé via 'auth-error'.
       }
       setLoading(false);
     };

@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:match*",
-      "destination": "https://chatbot-api.lantorian.com/api/v1/:match*"
+      "destination": "https://chatbot-api.bluevaloris.com/api/v1/:match*"
     },
     {
       "source": "/:path*",

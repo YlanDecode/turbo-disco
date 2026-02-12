@@ -1,9 +1,10 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { getErrorMessage, showErrorToast } from '@/lib/errors';
 import { useAuthStore } from '@/store/authStore';
+import type { Token } from '@/api/types';
 
 // Ensure HTTPS is always used for the API URL
-const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://chatbot-api.lantorian.com/api/v1';
+const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://chatbot-api.bluevaloris.com/api/v1';
 export const API_BASE_URL = rawApiUrl.replace(/^http:\/\//i, 'https://');
 export const IS_NGROK = /ngrok/i.test(String(API_BASE_URL));
 
@@ -97,6 +98,26 @@ const isProjectAuthError = (error: AxiosError<{ detail: string }>): boolean => {
   return isProjectEndpoint || isApiKeyError || (hadApiKeyHeader && !detail.includes('token'));
 };
 
+// --- Refresh token automatique sur 401 ---
+let isRefreshing = false;
+let pendingRequests: Array<(token: string) => void> = [];
+
+const processQueue = (token: string) => {
+  pendingRequests.forEach((cb) => cb(token));
+  pendingRequests = [];
+};
+
+const rejectQueue = () => {
+  pendingRequests = [];
+};
+
+const AUTH_ENDPOINTS = ['/auth/login', '/auth/signup', '/auth/refresh', '/auth/logout'];
+
+const isAuthEndpoint = (url: string | undefined): boolean => {
+  if (!url) return false;
+  return AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint));
+};
+
 // Endpoints qui gèrent leurs propres erreurs (pas de toast automatique)
 const SILENT_ENDPOINTS = ['/auth/login', '/auth/signup', '/auth/refresh'];
 
@@ -109,7 +130,7 @@ const shouldShowAutoToast = (url: string | undefined): boolean => {
 // Intercepteur de réponse pour gérer les erreurs
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ detail: string }>) => {
+  async (error: AxiosError<{ detail: string }>) => {
     const url = error.config?.url;
     const showToast = shouldShowAutoToast(url);
 
@@ -117,7 +138,7 @@ apiClient.interceptors.response.use(
       const { status } = error.response;
 
       switch (status) {
-        case 401:
+        case 401: {
           if (isProjectAuthError(error)) {
             // Erreur liée à la clé API du projet
             clearApiKey();
@@ -125,11 +146,56 @@ apiClient.interceptors.response.use(
             if (showToast) {
               showErrorToast(error);
             }
-          } else {
-            // Erreur liée au token JWT utilisateur
-            window.dispatchEvent(new Event('auth-error'));
+            break;
           }
-          break;
+
+          const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+          // Ne pas tenter de refresh sur les endpoints d'auth ou si déjà retried
+          if (isAuthEndpoint(originalRequest?.url) || originalRequest?._retry) {
+            window.dispatchEvent(new Event('auth-error'));
+            break;
+          }
+
+          const currentRefreshToken = getRefreshToken();
+          if (!currentRefreshToken) {
+            window.dispatchEvent(new Event('auth-error'));
+            break;
+          }
+
+          // Si un refresh est déjà en cours, mettre la requête en file d'attente
+          if (isRefreshing) {
+            return new Promise((resolve) => {
+              pendingRequests.push((newToken: string) => {
+                originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+                resolve(apiClient(originalRequest));
+              });
+            });
+          }
+
+          isRefreshing = true;
+          originalRequest._retry = true;
+
+          try {
+            const response = await publicClient.post<Token>(
+              '/auth/refresh',
+              { refresh_token: currentRefreshToken }
+            );
+            const newTokens = response.data;
+
+            useAuthStore.getState().setTokens(newTokens);
+            originalRequest.headers['Authorization'] = `Bearer ${newTokens.access_token}`;
+
+            processQueue(newTokens.access_token);
+            return apiClient(originalRequest);
+          } catch {
+            rejectQueue();
+            window.dispatchEvent(new Event('auth-error'));
+            return Promise.reject(error);
+          } finally {
+            isRefreshing = false;
+          }
+        }
 
         case 403:
         case 404:

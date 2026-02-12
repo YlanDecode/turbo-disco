@@ -14,7 +14,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://chatbot-api.lantorian.com/api/v1',
+        target: 'https://chatbot-api.bluevaloris.com/api/v1',
         changeOrigin: true,
       },
     },
